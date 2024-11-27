@@ -570,5 +570,5 @@ Spain_EQ53,SpainMurica_EQ21,Taiwan_EQ23,
 ChinaBeijing_EQ42,Westafrica_EQ159,EU_EQ79,
 Iran_EQ57,India_EQ158,
 Indonesia_EQ234, New_Zealand_EQ171,Morocco_EQ291,SpainMadrid_EQ22,
-Spain_EQ192,SouthSpain_EQ125,Spain_EQ251,Algeria_EQ182]).toUint16();
+SouthSpain_EQ125,Spain_EQ251,Algeria_EQ182]).toUint16();
 return {'EQ_145_181': EQ_145_181};}
