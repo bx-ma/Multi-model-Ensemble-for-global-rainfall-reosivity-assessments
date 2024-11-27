@@ -451,7 +451,6 @@ var beta = betalist.getNumber(m.subtract(1));
   };
 return  ee.ImageCollection(month_12.map(func_month));
 };
-var R_era5=EQ_121(yearwise_pre_GPd).sum().rename('Malaysia_EQ121_gpcc');
 var R_gpcc_m=EQ_286(MFI_GP).rename('Greece_EQ286_gpcc');
 var Greece_EQ286 = ee.Image.cat([R_gpcc_m]).clip(Greece);
 
