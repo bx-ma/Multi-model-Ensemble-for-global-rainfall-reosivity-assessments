@@ -528,12 +528,74 @@ var EQ_62 = function(img){
 var R_gpcc_m=EQ_62(Py_GP).rename('Hawai_EQ62_gpcc');
 var Hawai_EQ62 =ee.Image.cat([R_gpcc_m]).clip(Hawai);
 
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ China 12&51 (Model ID 50)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var coeff_month = function(imgc){
+  var func_month = function(date){
+    var Pd10 = imgc.filter(ee.Filter.gte('date',date))
+      .filter(ee.Filter.lte('date',ee.Number(date).add(29)));
+    var month = ee.Number(date).add(29).divide(30).toInt();
+    var beta = 1.7265;
+    var alpha = ee.Image(0.5412).multiply(month.subtract(7)
+    .multiply(Math.PI).divide(6).cos()).add(1).multiply(0.2686).rename('alpha');
+    var R_month = Pd10
+      .map(function(img)
+      {return img.pow(beta).multiply(alpha)}).sum();//calculate R per halfmonth;
+    return R_month.set('month',month);
+  };
+return  ee.ImageCollection(month_360.map(func_month));
+};
+var coeff_month2 = function(imgc){
+  var func_month2 = function(date){
+    var Pd10 = imgc.filter(ee.Filter.gte('date',date))
+      .filter(ee.Filter.lte('date',ee.Number(date).add(29)));
+    var month = ee.Number(date).add(29).divide(30).toInt();
+    var beta = 1.7394;
+    var alpha = ee.Image(0.8289).multiply(month.subtract(7)
+    .multiply(Math.PI).divide(6).cos()).add(1).multiply(0.2377).rename('alpha');
+    var R_month = Pd10
+      .map(function(img)
+      {return img.pow(beta).multiply(alpha)}).sum();//calculate R per halfmonth;
+    return R_month.set('month',month);
+  };
+return  ee.ImageCollection(month_360.map(func_month2));
+};
+
+var R_era5_m=coeff_month(yearwise_pre_GPd10).sum().rename(' China _EQ1251_gpcc');
+var R_era5_m2=coeff_month2(yearwise_pre_GPd10).sum().rename(' China _EQ1251_gpcc_m2');
+
+var China_EQ1251 =ee.Image.cat([R_era5_m,  R_era5_m2]).clip(China);
+///////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////EQ China 13&93 (Model ID 18)\\\\\\\\\\\\\\\\\\\\\\\\\\\\////////
+///////////////////////////////////////////////////////////////////////////////////////////
+var coeff_halfmonth = function(imgc){
+  var func_halfmonth = function(date){
+    var Py12 = imgc.sum();
+    var Pd12 = imgc.filter(ee.Filter.gte('date',date))
+      .filter(ee.Filter.lte('date',ee.Number(date).add(14))).mean().clamp(12,10000);
+    var beta = Pd12.pow(-1).multiply(18.177)
+      .add(Py12.pow(-1).multiply(24.455)).add(0.8363)
+      .rename('beta').set('halfmonth',date);
+    var alpha = ee.Image(21.586).multiply(beta.pow(-7.1891)).rename('alpha').set('halfmonth',date);
+    var R_halfmonth = imgc.filter(ee.Filter.gte('date',date))
+      .filter(ee.Filter.lte('date',ee.Number(date).add(14)))
+      .map(function(img)
+      {return img.pow(beta).multiply(alpha)}).sum();//calculate R per halfmonth;
+    return R_halfmonth.set('halfmonth',date);
+  };
+return  ee.ImageCollection(halfmonth_list.map(func_halfmonth));
+};
+var R_era5_m=coeff_halfmonth(yearwise_pre_GPd12).sum().rename(China _EQ1393_gpcc');
+var China _EQ1393 = ee.Image.cat([R_era5_m]).clip(China);
+
 var EQ_111_248= ee.Image.cat([
 BrazilES_EQ139, ChinaChongqing_EQ16
-,England_EQ146,Ethiopia_EQ157,
-Slovenia_EQ149,BrazilJaneiro_EQ188
+,England_EQ146,Ethiopia_EQ157, China _EQ1393,
+Slovenia_EQ149,BrazilJaneiro_EQ188, China_EQ1251
 ,Malaysia_EQ121,Cuba_EQ219,Australia_EQ104,
-SpainCatalunya_EQ136142,Hawai_EQ62
+SpainCatalunya_EQ136142,
 ]).toUint16();
 
 return {'EQ_111_248': EQ_111_248};};
