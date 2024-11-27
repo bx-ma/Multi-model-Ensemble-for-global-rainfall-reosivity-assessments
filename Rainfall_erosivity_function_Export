@@ -1,0 +1,20 @@
+// ****************************************************************************************************************** //
+// **************************************** Main rainfall erosivity export process ************************************** //
+// ****************************************************************************************************************** //
+
+// Calculated year////
+var year=require('users/zrjnwafu/functions:time').year;
+
+// Running function
+var Fun_EQ_34_117 = require('users/your GEE project name/your GEE Script name');
+var EQ_34_117 = Fun_EQ_34_117.your functions name().parameter name();//Change the function and parameter to produce rainfall erosivity from differernt models.
+
+// Export the rainfall erosivity images to GEE Asset
+Export.image.toAsset({
+	image:EQ_34_117,
+	description:'GRE_EQ_34_117'+'_'+year+'_GPCC_20240415',
+	assetId:'GRE_EQ_34_117'+'_'+year+'_GPCC_20240415',
+	scale:11132,
+	crs:"EPSG:4326",
+	maxPixels:1e13
+});
