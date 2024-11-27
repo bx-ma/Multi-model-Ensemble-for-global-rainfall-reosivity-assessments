@@ -1,0 +1,537 @@
+// ****************************************************************************************************************** //
+// *********** The functions of producing rainfall erosivity layer stacks *************** //
+// ****************************************************************************************************************** //
+
+//********************************************************************************************//
+//****************************Load the datasets******************************************//
+//**********************************************************************************************//
+
+var LSIB = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017"),
+GLB = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level1"),
+SRTM = ee.Image("CGIAR/SRTM90_V4"),
+East_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/East_India"),
+    Mediterranean = 
+    /* color: #d63000 */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[-7.708243510682518, 44.028197232809184],
+          [-9.246362744428057, 43.07257535728086],
+          [-10.03696790417851, 37.58297959194377],
+          [-7.399915600107899, 35.213382419856266],
+          [-3.268757295162169, 34.310969976530075],
+          [-1.0495329910605673, 36.936276035227735],
+          [9.069104500161284, 37.777850738513195],
+          [8.8494003530417, 36.62268755061064],
+          [9.113117124965353, 35.77152936344481],
+          [13.52904783697106, 34.5623388920667],
+          [17.067753766232926, 35.80729073073618],
+          [26.2395822802117, 34.59415115512421],
+          [29.975170770345983, 34.340480702310245],
+          [32.43627156325146, 34.590625637436425],
+          [35.07360122187942, 35.66615411582376],
+          [38.27376767450853, 38.393089923681266],
+          [42.75652261339847, 38.667990797732415],
+          [44.77825455127132, 40.36298169166049],
+          [48.162302616426366, 40.53007391058222],
+          [42.5809580614015, 42.56921265817905],
+          [41.745915642493806, 42.34226268548153],
+          [41.74587336133325, 41.623554556795725],
+          [40.69107884548315, 41.195088081399376],
+          [39.10891661495288, 41.062720643840606],
+          [35.32936724296484, 42.24491107447128],
+          [30.978399839654294, 41.689485072719684],
+          [29.00074458632653, 43.850742248403435],
+          [26.71543164817561, 46.78565997155885],
+          [21.74911258350958, 47.88764416735207],
+          [19.815311603102444, 48.619211884537],
+          [15.946619358110448, 48.023559727393945],
+          [10.233212389761018, 46.10782167235016],
+          [1.865020183617809, 44.372855892297586]]]),
+    GMTED = ee.Image("USGS/GMTED2010"),
+    MODIS_PET = ee.ImageCollection("MODIS/061/MOD16A2GF"),
+A_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/A_Iran"),
+    B_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/B_Iran"),
+    C_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/C_Iran"),
+    D_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/D_Iran"),
+    E_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/E_Iran"),
+    F_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/F_Iran"),
+    G_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/G_Iran"),
+    N = 
+    /* color: #d63000 */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[-41.05914778607034, -17.754432681074444],
+          [-41.39972395794534, -18.235081734150835],
+          [-41.28986067669534, -19.067820239675346],
+          [-41.20197005169534, -18.95356205614252],
+          [-40.93829817669534, -18.943171059742443],
+          [-40.77350325482034, -18.943171059742443],
+          [-40.77350325482034, -18.82882747502253],
+          [-40.66363997357034, -18.787228663328374],
+          [-40.37799544232034, -18.75602280940665],
+          [-40.02643294232034, -18.735215699363305],
+          [-39.92755598919534, -18.797629330450995],
+          [-39.56500716107034, -19.171623030026684],
+          [-39.534238183633775, -18.214319918708934],
+          [-39.96809651726255, -17.55692209989179]]]),
+    W = 
+    /* color: #98ff00 */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[-41.09320655956532, -18.850652882145308],
+          [-41.12616554394032, -19.016923270689716],
+          [-41.37885109081532, -19.494020941688785],
+          [-41.53265968456532, -20.09357669683035],
+          [-41.10419288769032, -20.279183481690207],
+          [-41.03827491894032, -20.124526499358222],
+          [-40.86249366894032, -19.918079167046557],
+          [-40.70868507519032, -19.721704175882373],
+          [-40.44501320019032, -19.50437716166155],
+          [-40.18134132519032, -19.514732718645455],
+          [-40.02753273144032, -19.535441842463523],
+          [-39.70892921581532, -19.68033122284192],
+          [-39.55512062206532, -19.421508863061856],
+          [-39.69794288769032, -19.286757771059783],
+          [-40.09345070019032, -19.390422342728268],
+          [-40.39008155956532, -19.141517103312697],
+          [-40.58783546581532, -19.016923270689716],
+          [-40.88446632519032, -18.829857463667576]]]),
+    E = 
+    /* color: #0b4a8b */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[-40.81305519237782, -18.762254588484506],
+          [-41.16461769237782, -20.304944689941358],
+          [-41.0780386940914, -20.55856277043037],
+          [-41.0011343972164, -20.815511828393735],
+          [-40.4078726784664, -21.205235355438745],
+          [-39.2103629128414, -19.039094403793825],
+          [-39.9134879128414, -18.550271418024455]]]),
+    S = 
+    /* color: #ffc82d */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[-40.7154898659664, -21.348559940539623],
+          [-40.6935172097164, -20.702507861434434],
+          [-41.2757926003414, -20.033049153925777],
+          [-41.8800406472164, -20.012404593680994],
+          [-42.0448355690914, -20.568849074125776],
+          [-41.7591910378414, -21.307624311199877],
+          [-41.1219840065914, -21.450848976512663]]]),
+    South_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/South_India"),
+    West_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/West_India"),
+    Central_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/Central_India"),
+    LoessPlateau = ee.FeatureCollection("projects/ee-zrj-shapefiles/assets/Loessplateau"),
+    North_India = 
+    /* color: #d63000 */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[76.63421789520456, 33.35623990908619],
+          [75.66742102020456, 32.47085500510195],
+          [74.65667883270456, 31.83837983763671],
+          [74.04144445770456, 30.067206458214073],
+          [76.15081945770456, 28.379816178438073],
+          [77.86468664520456, 27.135427433884782],
+          [78.83148352020456, 25.441305125678003],
+          [81.33636633270456, 24.924316905769118],
+          [83.79730383270456, 24.52515060653834],
+          [86.39007727020456, 24.68497072901565],
+          [87.92816320770456, 24.964162938980394],
+          [88.49945227020456, 26.429275026088632],
+          [88.05999914520456, 26.46862065105867],
+          [87.40081945770456, 26.46862065105867],
+          [84.32464758270456, 27.25269069187818],
+          [81.16058508270456, 27.992475581788643],
+          [79.75433508270456, 28.88124989062924],
+          [80.72113195770456, 30.29513473908765],
+          [78.65570227020456, 31.464293412293017],
+          [78.30413977020456, 32.693030515262194]]]),
+    MexicoRex = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/MexicoRegions"),
+    BrazilRe11 = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/BrazilRes1"),
+    BrazilRe8 = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/BrazilRes152"),
+    GLB2 = ee.FeatureCollection("FAO/GAUL/2015/level2"),
+GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month"),
+    time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month"),
+    GPCC_DA = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_day"),
+    time_DA = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/time_day"),
+    geometry116 = 
+    /* color: #d63000 */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[32.55910355841252, 61.703945869016934],
+          [29.658712933412517, 59.325914121087735],
+          [29.395041058412517, 57.46091854405888],
+          [32.07570512091252, 55.245947475786025],
+          [33.664437958080796, 53.21545322640634],
+          [35.422250458080796, 51.716355522643454],
+          [38.542367645580796, 50.75336095638244],
+          [40.739633270580796, 50.55833911623244],
+          [41.370668077756754, 51.201069671347334],
+          [44.30914142250314, 50.62783124510482],
+          [46.24273517250314, 51.40191817483539],
+          [50.81304767250314, 53.28095265871065],
+          [52.971883276652356, 53.725692512180146],
+          [54.356160620402356, 54.126769080697734],
+          [52.07376868714107, 56.63478406955921],
+          [48.916168452049185, 58.50980503662604],
+          [46.37066057932566, 60.591715888157715],
+          [44.92046526682566, 61.71528840191588],
+          [40.361083922799295, 63.95735250658787]]]);
+
+
+//********************************************************************************************//
+//****************************function main body******************************************//
+//**********************************************************************************************//
+exports.gpcc111_248=function(){
+var country_co= LSIB.select("country_co");
+//////////////////////////////////////EQ China 115\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var China = GLB.filter(ee.Filter.eq('ADM0_NAME','China'));
+//////////////////////////////////////EQ GreeceAlgeria 120\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var GreeceAlgeria = GLB.filter(ee.Filter.or(ee.Filter.eq('ADM0_NAME','Greece'),
+ee.Filter.eq('ADM0_NAME','Algeria')));
+//////////////////////////////////////EQ BrazilSPMGRJ 134\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilSPMGRJ = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Sao Paulo'),
+ee.Filter.eq('ADM1_NAME','Minas Gerais'),ee.Filter.eq('ADM1_NAME','	Rio De Janeiro')));
+//////////////////////////////////////EQ BrazilES 139\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilES = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Espirito Santo')).geometry();
+var SantoNorth = BrazilES.intersection(N);
+var SantoWest = BrazilES.intersection(W).difference(SantoNorth);
+var SantoEast = BrazilES.intersection(E)
+.difference(SantoNorth).difference(SantoWest);
+var SantoSouth = BrazilES.intersection(S)
+.difference(SantoNorth).difference(SantoWest).difference(SantoEast);
+//////////////////////////////////////EQ ChinaKarst 16&17\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChinaChongqing = China.filter(ee.Filter.eq('ADM1_NAME','Chongqing Shi'));
+//////////////////////////////////////EQ Morocco 179\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Morocco = GLB.filter(ee.Filter.eq('ADM0_NAME','Morocco'));
+//////////////////////////////////////EQ Iran 141\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Iran = GLB.filter(ee.Filter.eq('ADM0_NAME','Iran'));
+//////////////////////////////////////EQ Kenya 111\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Kenya = GLB.filter(ee.Filter.eq('ADM0_NAME','Kenya'));
+//////////////////////////////////////EQ BrazilMTCuiaba 213\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilMTCuiaba = GLB2.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Mato Grosso'))
+.filter(ee.Filter.eq('ADM2_NAME','Cuiaba'));
+//////////////////////////////////////EQ BrazilGoias 217\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilGoias = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Goias'));
+//////////////////////////////////////EQ BrazilSaoPaulo 275\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilSaoPaulo = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Sao Paulo'));
+//////////////////////////////////////EQ BrazilPara 285\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilPara = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Para'));
+//////////////////////////////////////EQ Brazil 100\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Brazil = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'));
+//////////////////////////////////////EQ BrazilRe 100\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilRe = BrazilRe11.toList(11);
+
+var Re1=ee.Feature(BrazilRe.get(0));
+var Re2=ee.Feature(BrazilRe.get(1));
+var Re3=ee.Feature(BrazilRe.get(2));
+var Re4=ee.Feature(BrazilRe.get(3));
+var Re5=ee.Feature(BrazilRe.get(4));
+var Re6=ee.Feature(BrazilRe.get(5));
+var Re7=ee.Feature(BrazilRe.get(6));
+var Re8=ee.Feature(BrazilRe.get(7));
+var Re9=ee.Feature(BrazilRe.get(8));
+var Re10=ee.Feature(BrazilRe.get(9));
+var Re11=ee.Feature(BrazilRe.get(10));
+//////////////////////////////////////EQ BrazilPernambuco 183\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilPernambuco = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Pernambuco'));
+//////////////////////////////////////EQ BrazilJaneiro 225\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilJaneiro = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Rio De Janeiro'));
+//////////////////////////////////////EQ BrazilRGDoSul 284\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilRGDoSul = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Rio Grande Do Sul'));
+//////////////////////////////////////EQ BrazilTABasin 107\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilMatoGrosso = GLB2.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Mato Grosso'));
+//////////////////////////////////////EQ BrazilTABasin 107\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilTocantins = GLB2.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Tocantins'));
+//////////////////////////////////////EQ BrazilTABasin 107\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilMaranhao = GLB2.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Maranhao'));
+//////////////////////////////////////EQ BrazilSantaCatarina 124\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilSantaCatarina = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Santa Catarina'));
+//////////////////////////////////////EQ Brazilsemiarid 127\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Brazilsemiarid = BrazilRe8.toList(8).get(3);
+//////////////////////////////////////EQ BrazilMinasGerais 138\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilMinasGerais = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Minas Gerais'));
+//////////////////////////////////////EQ BrazilCeara 150\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilCeara = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Ceara'));
+//////////////////////////////////////EQ Brazil 152\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilRe = BrazilRe8.toList(8);
+
+var Re1=ee.Feature(BrazilRe.get(0));
+var Re2=ee.Feature(BrazilRe.get(1));
+var Re3=ee.Feature(BrazilRe.get(2));
+var Re4=ee.Feature(BrazilRe.get(3));
+var Re5=ee.Feature(BrazilRe.get(4));
+var Re6=ee.Feature(BrazilRe.get(5));
+var Re7=ee.Feature(BrazilRe.get(6));
+var Re8=ee.Feature(BrazilRe.get(7));
+//////////////////////////////////////EQ BrazilandUruguay 176\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilRioGrandeDoSul = BrazilRGDoSul.geometry();
+var Uruguay = GLB.filter(ee.Filter.eq('ADM0_NAME','Uruguay')).geometry();
+var BrazilandUruguay=BrazilRioGrandeDoSul.union(Uruguay);
+//////////////////////////////////////EQ BrazilSantaCatarina 172\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ BrazilMatoGrossoDoSul 208\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilMatoGrossoDoSul = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Mato Grosso Do Sul'));
+//////////////////////////////////////EQ BrazilRGDN 220\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilRGDN = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Rio Grande Do Norte'));
+//////////////////////////////////////EQ BrazilAlagoas 232\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilAlagoas = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Alagoas'));
+//////////////////////////////////////EQ BrazilBahia 239\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilBahia = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Bahia'));
+//////////////////////////////////////EQ BrazilJaneiroMG 56\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilJaneiroMG = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Rio De Janeiro'),
+ee.Filter.eq('ADM1_NAME','Minas Gerais')));
+//////////////////////////////////////EQ Algeria 86Y\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Algeria = GLB.filter(ee.Filter.eq('ADM0_NAME','Algeria'));
+//////////////////////////////////////EQ Russia 116\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Russia = GLB.filter(ee.Filter.eq('ADM0_NAME','Russian Federation'))
+.filterBounds(geometry116).union(1e5);
+//////////////////////////////////////EQ SriLanka 155\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var SriLanka = GLB.filter(ee.Filter.eq('ADM0_NAME','Sri Lanka'));
+//////////////////////////////////////EQ ChinaNeiMongol 157\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChinaNeiMongol = GLB.filter(ee.Filter.eq('ADM0_NAME','China'))
+.filter(ee.Filter.eq('ADM1_NAME','Nei Mongol Zizhiqu'));
+//////////////////////////////////////EQ EthiopiaSaudiUganda 157\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Ethiopia = GLB.filter(ee.Filter.eq('ADM0_NAME','Ethiopia'));
+//////////////////////////////////////EQ Nigeria 156\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Nigeria = GLB.filter(ee.Filter.eq('ADM0_NAME','Nigeria'));
+//////////////////////////////////////EQ England 146\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var England = country_co.filter(ee.Filter.eq('country_co','UK'));
+//////////////////////////////////////EQ Greece 122\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Greece = GLB.filter(ee.Filter.eq('ADM0_NAME','Greece'));
+/////////////////////////////////////EQ BrazilMG 118\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilMG = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Minas Gerais'),
+ee.Filter.eq('ADM1_NAME','Sao Paulo'),ee.Filter.eq('ADM1_NAME','Rio De Janeiro')));
+/////////////////////////////////////EQ SouthAsia 12&51\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var SouthAsia = GLB.filter(ee.Filter.or(ee.Filter.eq('ADM0_NAME','Thailand'),
+ee.Filter.eq('ADM0_NAME','Laos'),ee.Filter.eq('ADM0_NAME','Nepal'),
+ee.Filter.eq('ADM0_NAME','Vietnam'),ee.Filter.eq('ADM0_NAME','China'),
+ee.Filter.eq('ADM0_NAME','Myanmar'),
+ee.Filter.eq('ADM0_NAME','Cambodia')));
+/////////////////////////////////////EQ SouthAsia 13&93\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+/////////////////////////////////////EQ Hainan 13-15\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChinaHainan = GLB.filter(ee.Filter.eq('ADM0_NAME','China'))
+.filter(ee.Filter.eq('ADM1_NAME','Hainan Sheng'));
+/////////////////////////////////////EQ Slovenia 149\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Slovenia = GLB.filter(ee.Filter.eq('ADM0_NAME','Slovenia'));
+/////////////////////////////////////EQ BrazilJaneiro 188\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilJaneiro = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Rio De Janeiro'));
+//////////////////////////////////////EQ Malaysia 121\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Malaysia = GLB.filter(ee.Filter.eq('ADM0_NAME','Malaysia'));
+//////////////////////////////////////EQ Spain 95\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Spain = GLB.filter(ee.Filter.eq('ADM0_NAME','Spain'));
+//////////////////////////////////////EQ Nigeria 216\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Nigeria = GLB.filter(ee.Filter.eq('ADM0_NAME','Nigeria'));
+//////////////////////////////////////EQ GermanyBrandenburg 48\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var GermanyBrandenburg = GLB.filter(ee.Filter.eq('ADM0_NAME','Germany'))
+.filter(ee.Filter.eq('ADM1_NAME','Brandenburg')).geometry();
+//////////////////////////////////////EQ Cuba 219\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Cuba = GLB.filter(ee.Filter.eq('ADM0_NAME','Cuba'));
+//////////////////////////////////////EQ Belgium 246\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Belgium=GLB.filter(ee.Filter.eq('ADM0_NAME','Belgium'));
+//////////////////////////////////////EQ Australia 104\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Australia=GLB.filter(ee.Filter.eq('ADM0_NAME','Australia'));
+/////////////////////////////////////EQ ChinaHebeiYunnan 105\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChinaHebeiYunnan = GLB.filter(ee.Filter.eq('ADM0_NAME','China'))
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Hebei Sheng'),
+ee.Filter.eq('ADM1_NAME','Yunnan Sheng')));
+/////////////////////////////////////EQ SpainCatalunya 136/142\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var SpainCatalunya = GLB.filter(ee.Filter.eq('ADM0_NAME','Spain'))
+.filter(ee.Filter.eq('ADM1_NAME','Cataluña/Catalunya'));
+/////////////////////////////////////EQ ChinaYunnan 137\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChinaYunnan = GLB.filter(ee.Filter.eq('ADM0_NAME','China'))
+.filter(ee.Filter.eq('ADM1_NAME','Yunnan Sheng'));
+/////////////////////////////////////EQ India 175\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var India = GLB.filter(ee.Filter.eq('ADM0_NAME','India'));
+/////////////////////////////////////EQ SpainAndalucia 205&244\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var SpainAndalucia = GLB.filter(ee.Filter.eq('ADM0_NAME','Spain'))
+.filter(ee.Filter.eq('ADM1_NAME','Andalucía'));
+/////////////////////////////////////EQ ChinaTBP 248\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ROI_CH = GLB.filter(ee.Filter.eq('ADM0_NAME','China'));
+var ChinaTBP= ROI_CH.filter(ee.Filter.or(
+ee.Filter.eq('ADM1_NAME','Qinghai Sheng'),ee.Filter.eq('ADM1_NAME','Xizang Zizhiqu')));
+var England_Italy = country_co.filter(ee.Filter.or(
+ee.Filter.eq('country_co','UK'),ee.Filter.eq('country_co','IT')));
+//////////////////////////////////////EQ Spain 21&53\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Spain = GLB.filter(ee.Filter.eq('ADM0_NAME','Spain'));
+//////////////////////////////////////EQ Taiwan 23\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Taiwan = GLB.filter(ee.Filter.eq('ADM0_NAME','Taiwan'));
+//////////////////////////////////////EQ ChinaBeijing 42\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChinaBeijing = GLB.filter(ee.Filter.eq('ADM0_NAME','China')).filter(ee.Filter.eq('ADM1_NAME','Beijing Shi'));
+//////////////////////////////////////EQ Shaanxi 45\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChinaShaanxi = GLB.filter(ee.Filter.eq('ADM0_NAME','China')).filter(ee.Filter.eq('ADM1_NAME','Shaanxi Sheng'));
+//////////////////////////////////////EQ Iran 57\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Iran = GLB.filter(ee.Filter.eq('ADM0_NAME','Iran'));
+var Italy = GLB.filter(ee.Filter.eq('ADM0_NAME','Italy'));
+//////////////////////////////////////EQ ItalyAbruzzi 122\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ItalyAbruzzi = Italy.filter(ee.Filter.eq('ADM1_NAME','Abruzzi'));
+//////////////////////////////////////EQ ItalySicily 120\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ItalySicily = Italy.filter(ee.Filter.eq('ADM1_NAME','Sicilia'));
+///////////////////////////////////////Preparation\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var year=require('users/zrjnwafu/functions:time').year;
+var month1=01;
+var month12=12;
+var startdate=ee.Date.fromYMD({year:year,month:month1,day:1});
+var enddate=ee.Date.fromYMD({year:year,month:month12,day:31});
+
+var getDaysInYear = function(m) {
+  var date = ee.Date.fromYMD(year,m,1);  // Creates a date object that represents the first day of the month and year that represents the year
+  var nextYear = date.advance(1, 'year');  // Moves the date object back by one month
+  var days = nextYear.difference(date, 'day');  // Calculate the number of days apart between two date objects
+  return days;};  // Returns results
+var days = getDaysInYear(1);// Test the function
+
+var getMonthsInYear = function(year) {
+  var date = ee.Date.fromYMD(year, month1, 1);  // Creates a date object that represents the first day of the month and year that represents the year
+  var nextYear = date.advance(1, 'year');  // Moves the date object back by one month
+  var months = nextYear.difference(date, 'month');  // Calculate the number of days apart between two date objects
+  return months;  // Returns results
+};
+
+var months = getMonthsInYear(year);
+var date = ee.List.sequence(1,364);
+var month_12 = ee.List.sequence(1, 12);
+var month_360 = ee.List.sequence(1, 360,30);
+var halfmonth_list = ee.List.sequence(1, 360, 15);
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var CollectionFunc = require('users/zrjnwafu/functions:FromImages2Collection');
+var GPCC_monthCol = CollectionFunc.FromImages2Collection_func(GPCC_MO,time_MO).imgCol;
+var GPCC_MO_load = require('users/zrjnwafu/functions:GPCC_MO');
+var GPCC_MO_processed = GPCC_MO_load.GPCC_MO_func(GPCC_monthCol);
+//GPCC MONTHLY MFI
+var yearwise_pre_GPm = GPCC_MO_processed.yearwise_pre_GPm;
+var Py_GP = GPCC_MO_processed.Py_GP;
+var Rc_GP = GPCC_MO_processed.Rc_GP;
+var MFI_GP = GPCC_MO_processed.MFI_GP;
+var P6_9m_GP = GPCC_MO_processed.P6_9m_GP;
+var P5_10m_GP = GPCC_MO_processed.P5_10m_GP;
+var P4_10m_GP = GPCC_MO_processed.P4_10m_GP;
+var P10_5m_GP = GPCC_MO_processed.P10_5m_GP;
+var Pmmax_GP = GPCC_MO_processed.Pmmax_GP;
+var CV_GP = GPCC_MO_processed.CV_GP;
+var FF_GP = GPCC_MO_processed.FF_GP;
+var PCI_GP = GPCC_MO_processed.PCI_GP;
+var SI_GP = GPCC_MO_processed.SI_GP;
+var FI_GP = GPCC_MO_processed.FI_GP;
+var Pspring_GP = GPCC_MO_processed.Pspring_GP;
+var Psummer_GP = GPCC_MO_processed.Psummer_GP;
+var Pautumn_GP = GPCC_MO_processed.Pautumn_GP;
+var Pwinner_GP = GPCC_MO_processed.Pwinner_GP;
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var GPCC_dayCol = CollectionFunc.FromImages2Collection_func(GPCC_DA,time_DA).imgCol;
+var GPCC_DA_load = require('users/zrjnwafu/functions:GPCC_DA');
+var GPCC_DA_processed = GPCC_DA_load.GPCC_DA_func(GPCC_dayCol,GPCC_monthCol);
+//GPCC daily MFI
+var yearwise_pre_GPd = GPCC_DA_processed.yearwise_pre_GPd;
+var yearwise_pre_GPd4 = GPCC_DA_processed.yearwise_pre_GPd4;
+var yearwise_pre_GPd8 = GPCC_DA_processed.yearwise_pre_GPd8;
+var yearwise_pre_GPd10 = GPCC_DA_processed.yearwise_pre_GPd10;
+var yearwise_pre_GPd12 = GPCC_DA_processed.yearwise_pre_GPd12;
+var Days_GPm10 = GPCC_DA_processed.Days_GPm10;
+var P_GPm10 = GPCC_DA_processed.P_GPm10;
+var Days_GPm = GPCC_DA_processed.Days_GPm;
+var Days_GP = GPCC_DA_processed.Days_GP;
+var yearwise_pre_GPdm = GPCC_DA_processed.yearwise_pre_GPdm;
+var F24_GP = GPCC_DA_processed.F24_GP;
+var MFI_GPd = GPCC_DA_processed.MFI_GPd;
+var PCI_GPd = GPCC_DA_processed.PCI_GPd;
+var ERA5_MO_load = require('users/zrjnwafu/functions:ERA5_MO');
+var ERA5_MO_processed = ERA5_MO_load.ERA5_MO_func(ERA5_MO);
+
+///////////////////////////////////////Functions\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Ele = GMTED;
+var PET=MODIS_PET.select('PET').filterDate(startdate,enddate)
+.mean().multiply(0.1).divide(8).multiply(365);
+var Lon = ee.Image.pixelLonLat().select('longitude');
+var Lat = ee.Image.pixelLonLat().select('latitude');
+
+/////////////////////////////////////////Rainfall erosivity calculation function///////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ BrazilEspiritoSanto 139 (Model ID 35)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_139 = function(img){
+    var MFI = img;
+    var a1 = 42.31;
+    var a2 = 69.76;
+    var results_1 = MFI.multiply(a1).add(a2)
+    .clip(SantoNorth).set('year', year);
+    
+    var b1 = 121.39;
+    var b2 = 0.7982;
+    var results_2 = MFI.pow(b2).multiply(b1)
+    .clip(SantoWest).set('year', year);
+    
+    var c1 = 33.86;
+    var c2 = 67.99;
+    var results_3 = MFI.multiply(c1).add(c2)
+    .clip(SantoEast).set('year', year);
+    
+    var d1 = 38.14;
+    var d2 = 64.87;
+    var results_4 = MFI.multiply(d1).add(d2)
+    .clip(SantoSouth).set('year', year);
+
+    var results = ee.ImageCollection.fromImages
+    ([results_1,results_2,results_3,results_4]).mosaic();
+    
+    return results;
+};
+var R_era5_m=EQ_139(MFI_GP).rename('BrazilES_EQ139_gpcc');
+var BrazilES_EQ139 = ee.Image.cat([R_era5_m]).clip(BrazilES);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ ChinaKarst 16&17 (Model ID 74)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_16 = function(img1){
+    var MFI = img1;
+    var results = MFI.pow(1.205).multiply(5.249).set('year', year);
+    return  results;
+};
+var R_era5_m=EQ_16(MFI_GP).rename('ChinaChongqing_EQ16_gpcc');
+var ChinaChongqing_EQ16 = ee.Image.cat([R_era5_m]).clip(ChinaChongqing);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ Ethiopia 157 (Model ID 9)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ157_1 = function(imgc){
+    var Pm = imgc;
+    var results = Pm.map(function(img){
+      var rm = img.divide(10).multiply(5.62).subtract(8.12);
+      return rm;
+    }).sum().multiply(10);
+    return  results.set('year', year);
+};
+var EQ157_2 = function(imgc){
+    var Pm = imgc;
+    var results = Pm.map(function(img){
+      var rm = img.divide(10).multiply(5.5).subtract(4.7);
+      return rm;
+    }).sum().multiply(10);
+    return  results.set('year', year);
+};
+
+var R_era5_m=EQ157_1(yearwise_pre_GPm).rename('Ethiopia_EQ157_gpcc');
+var R_era5_m2=EQ157_2(yearwise_pre_GPm).rename('Ethiopia_EQ157_gpcc_m2');
+var Ethiopia_EQ157 = ee.Image.cat([R_era5_m,R_era5_m2]).clip(Ethiopia);
+
