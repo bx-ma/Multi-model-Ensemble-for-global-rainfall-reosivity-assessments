@@ -1,0 +1,377 @@
+// ****************************************************************************************************************** //
+// *********** The functions of producing rainfall erosivity layer stacks *************** //
+// ****************************************************************************************************************** //
+
+//********************************************************************************************//
+//****************************Load the datasets******************************************//
+//**********************************************************************************************//
+var LSIB = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017"),
+GLB = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level1"),
+SRTM = ee.Image("CGIAR/SRTM90_V4"),
+    GMTED = ee.Image("USGS/GMTED2010"),
+    MODIS_PET = ee.ImageCollection("MODIS/061/MOD16A2GF"),
+    GLB2 = ee.FeatureCollection("FAO/GAUL/2015/level2"),
+GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month"),
+    time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month"),
+    GPCC_DA = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_day"),
+    time_DA = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/time_day"),
+    AF_M = 
+    /* color: #d63000 */
+    /* shown: false */
+    ee.Geometry.Polygon(
+        [[[5.955151922558912, 40.27810610029129],
+          [-10.919848077441031, 35.279981680789255],
+          [-11.622973077441031, 31.16421739336121],
+          [-11.974535577441031, 29.800903251834576],
+          [-15.314379327441031, 26.390202860143784],
+          [-18.83000432744103, 21.900551526427144],
+          [-19.18156682744103, 6.6191089417575135],
+          [17.090406929238384, -36.93889121842252],
+          [42.930250679238384, -36.79826386344616],
+          [56.816969429238384, -22.98618093057201],
+          [53.477125679238384, -21.848723844474673],
+          [53.301344429238384, -12.283619603047743],
+          [52.422438179238384, 12.017305335312695],
+          [39.45037642934926, 32.685962638359044],
+          [26.266782679349262, 33.569200536068415],
+          [16.423032679349262, 34.15306402116526],
+          [10.973813929349262, 38.81434845925418]]]);
+
+//********************************************************************************************//
+//****************************function main body******************************************//
+//**********************************************************************************************//
+exports.gpcc270_296 = function(){
+
+var country_co= LSIB.select("country_co");
+
+//////////////////////////////////////EQ Korea 62Y\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Korea = GLB.filter(ee.Filter.eq('ADM0_NAME','Republic of Korea'));
+
+//////////////////////////////////////EQ Brazil 270\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Brazil = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'));
+
+var B_NorthMidWest = Brazil.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Amazonas'),
+ee.Filter.eq('ADM1_NAME','Rondonia'),ee.Filter.eq('ADM1_NAME','Para'),
+ee.Filter.eq('ADM1_NAME','Roraima'),ee.Filter.eq('ADM1_NAME','Amapa')
+,ee.Filter.eq('ADM1_NAME','Tocantins'),ee.Filter.eq('ADM1_NAME','Mato Grosso'),
+ee.Filter.eq('ADM1_NAME','Goias'),ee.Filter.eq('ADM1_NAME','Mato Grosso Do Sul')));
+
+var B_South = Brazil.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Rio Grande Do Sul'),
+ee.Filter.eq('ADM1_NAME','Santa Catarina'),ee.Filter.eq('ADM1_NAME','Parana')));
+
+var B_SouthEast = Brazil.filter(ee.Filter.or(
+ee.Filter.eq('ADM1_NAME','Sao Paulo'),ee.Filter.eq('ADM1_NAME','Minas Gerais'),
+ee.Filter.eq('ADM1_NAME','Rio De Janeiro'),ee.Filter.eq('ADM1_NAME','Espirito Santo')));
+
+var B_NorthEast = Brazil.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Bahia'),
+ee.Filter.eq('ADM1_NAME','Piaui'),ee.Filter.eq('ADM1_NAME','Maranhao'),
+ee.Filter.eq('ADM1_NAME','Ceara'),ee.Filter.eq('ADM1_NAME','Pernambuco'),
+ee.Filter.eq('ADM1_NAME','Sergipe'),ee.Filter.eq('ADM1_NAME','Alagoas'),
+ee.Filter.eq('ADM1_NAME','Paraiba'),ee.Filter.eq('ADM1_NAME','Rio Grande Do Norte')));
+
+//////////////////////////////////////EQ Honduras 33-2\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Honduras = GLB.filter(ee.Filter.eq('ADM0_NAME','Honduras'));
+
+//////////////////////////////////////EQ Vietnam 49&97\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Vietnam = country_co.filter(ee.Filter.eq('country_co','VM'));
+
+//////////////////////////////////////EQ SriLanka 33\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var SriLanka = GLB.filter(ee.Filter.eq('ADM0_NAME','Sri Lanka'));
+
+/////////////////////////////////////EQ Zambia 293\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Zambia = GLB.filter(ee.Filter.eq('ADM0_NAME','Zambia'));
+
+/////////////////////////////////////EQ Japan 294\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Japan = GLB.filter(ee.Filter.eq('ADM0_NAME','Japan'));
+
+/////////////////////////////////////EQ Africa 295\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var country_co= LSIB.select("wld_rgn");
+var Africa = country_co.filter(ee.Filter.eq('wld_rgn','Africa'))
+.geometry().intersection(AF_M,1e4);
+
+/////////////////////////////////////EQ CapeVerde 296\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var CapeVerde = GLB.filter(ee.Filter.eq('ADM0_NAME','Cape Verde'));
+
+///////////////////////////////////////Preparation\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var year=require('users/zrjnwafu/functions:time').year;
+var month1=01;
+var month12=12;
+var startdate=ee.Date.fromYMD({year:year,month:month1,day:1});
+var enddate=ee.Date.fromYMD({year:year,month:month12,day:31});
+
+var getDaysInYear = function(m) {
+  var date = ee.Date.fromYMD(year,m,1);  
+  var nextYear = date.advance(1, 'year'); 
+  var days = nextYear.difference(date, 'day'); 
+  return days;}; 
+var days = getDaysInYear(1); 
+
+var getMonthsInYear = function(year) {
+  var date = ee.Date.fromYMD(year, month1, 1); 
+  var nextYear = date.advance(1, 'year');  
+  var months = nextYear.difference(date, 'month'); 
+  return months; 
+}; 
+
+var months = getMonthsInYear(year);
+var date = ee.List.sequence(1,364);
+var month_12 = ee.List.sequence(1, 12);
+var month_360 = ee.List.sequence(1, 360,30);
+var halfmonth_list = ee.List.sequence(1, 360, 15);
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var CollectionFunc = require('users/zrjnwafu/functions:FromImages2Collection');
+var GPCC_monthCol = CollectionFunc.FromImages2Collection_func(GPCC_MO,time_MO).imgCol;
+var GPCC_MO_load = require('users/zrjnwafu/functions:GPCC_MO');
+var GPCC_MO_processed = GPCC_MO_load.GPCC_MO_func(GPCC_monthCol);
+//GPCC MONTHLY MFI
+var yearwise_pre_GPm = GPCC_MO_processed.yearwise_pre_GPm;
+var Py_GP = GPCC_MO_processed.Py_GP;
+var Rc_GP = GPCC_MO_processed.Rc_GP;
+var MFI_GP = GPCC_MO_processed.MFI_GP;
+var P6_9m_GP = GPCC_MO_processed.P6_9m_GP;
+var P5_10m_GP = GPCC_MO_processed.P5_10m_GP;
+var P4_10m_GP = GPCC_MO_processed.P4_10m_GP;
+var P10_5m_GP = GPCC_MO_processed.P10_5m_GP;
+var Pmmax_GP = GPCC_MO_processed.Pmmax_GP;
+var CV_GP = GPCC_MO_processed.CV_GP;
+var FF_GP = GPCC_MO_processed.FF_GP;
+var PCI_GP = GPCC_MO_processed.PCI_GP;
+var SI_GP = GPCC_MO_processed.SI_GP;
+var FI_GP = GPCC_MO_processed.FI_GP;
+var Pspring_GP = GPCC_MO_processed.Pspring_GP;
+var Psummer_GP = GPCC_MO_processed.Psummer_GP;
+var Pautumn_GP = GPCC_MO_processed.Pautumn_GP;
+var Pwinner_GP = GPCC_MO_processed.Pwinner_GP;
+var ISM_GP = yearwise_pre_GPm.filter(ee.Filter.and(ee.Filter.gte('month',7),
+ee.Filter.lte('month',8))).sum();
+
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var GPCC_dayCol = CollectionFunc.FromImages2Collection_func(GPCC_DA,time_DA).imgCol;
+var GPCC_DA_load = require('users/zrjnwafu/functions:GPCC_DA');
+var GPCC_DA_processed = GPCC_DA_load.GPCC_DA_func(GPCC_dayCol,GPCC_monthCol);
+//GPCC daily MFI
+var yearwise_pre_GPd = GPCC_DA_processed.yearwise_pre_GPd;
+var yearwise_pre_GPd4 = GPCC_DA_processed.yearwise_pre_GPd4;
+var yearwise_pre_GPd8 = GPCC_DA_processed.yearwise_pre_GPd8;
+var yearwise_pre_GPd10 = GPCC_DA_processed.yearwise_pre_GPd10;
+var yearwise_pre_GPd12 = GPCC_DA_processed.yearwise_pre_GPd12;
+var Days_GPm10 = GPCC_DA_processed.Days_GPm10;
+var P_GPm10 = GPCC_DA_processed.P_GPm10;
+var Days_GPm = GPCC_DA_processed.Days_GPm;
+var Days_GP = GPCC_DA_processed.Days_GP;
+var yearwise_pre_GPdm = GPCC_DA_processed.yearwise_pre_GPdm;
+var F24_GP = GPCC_DA_processed.F24_GP;
+var MFI_GPd = GPCC_DA_processed.MFI_GPd;
+var PCI_GPd = GPCC_DA_processed.PCI_GPd;
+///////////////////////////////////////Functions\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Ele = GMTED;
+var PET=MODIS_PET.select('PET').filterDate(startdate,enddate)
+.mean().multiply(0.1).divide(8).multiply(365);
+var Lon = ee.Image.pixelLonLat().select('longitude');
+var Lat = ee.Image.pixelLonLat().select('latitude');
+
+//////////////////////////////////////EQ Brazil 270 (Model ID 40)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Ele = GMTED;
+var PET=MODIS_PET.select('PET').filterDate(startdate,enddate)
+.mean().multiply(0.1).divide(8).multiply(365);
+var Lon = ee.Image.pixelLonLat().select('longitude');
+var Lat = ee.Image.pixelLonLat().select('latitude');
+
+var RSouth = Ele.multiply(-60.44).add(Lon.multiply(98839))
+.add(Lat.pow(2).multiply(-1114.68)).add(Lon.pow(2).multiply(938.47))
+.add(Lon.multiply(Ele).multiply(-1.185)).add(Lon.pow(2).multiply(Lat.pow(2)).multiply(1.1885))
+.add(Lon.pow(3).multiply(Lat.pow(2)).multiply(0.01494)).add(2610770).clip(B_South);//
+
+var RNorthMidWest = Lon.multiply(1940.569).add(Lat.multiply(2713.076))
+.add(Lat.pow(2).multiply(-141.23)).add(Ele.pow(2).multiply(0.0008671))
+.add(Lon.pow(2).multiply(16.5387)).add(Lon.multiply(Lat).multiply(46.014))
+.add(Lon.pow(2).multiply(Ele).multiply(0.0004417))
+.add(Lon.pow(2).multiply(Ele.pow(2)).multiply(-3.39e-7))
+.add(Lon.pow(2).multiply(Lat.pow(2)).multiply(0.1905))
+.add(Lon.pow(3).multiply(Lat.pow(2)).multiply(0.00262)).add(69908).clip(B_NorthMidWest);//
+
+var RNorthEast = Lon.multiply(-383.48).add(-9264.11).add(Ele.multiply(599))
+.add(Lat.pow(2).multiply(-559.01)).add(Ele.pow(2).multiply(0.00955))
+.add(Lon.pow(2).multiply(Ele).multiply(0.3739))
+.add(Ele.multiply(Lon).multiply(30.24))
+.add(Lon.pow(2).multiply(Lat.pow(2)).multiply(1.0903))
+.add(Lon.pow(3).multiply(Lat.pow(2)).multiply(0.01834)).clip(B_NorthEast);
+
+var RSouthEast = Ele.multiply(420.49).add(-399443).add(Lat.multiply(-78296))
+.add(Ele.pow(2).multiply(-0.01784)).add(Lat.pow(2).multiply(-1594.04))
+.add(Lon.pow(2).multiply(195.84)).add(Ele.multiply(Lon).multiply(17.77))
+.add(Lat.multiply(Lon).multiply(-1716.27)).add(Lon.pow(2).multiply(Ele).multiply(0.1851))
+.add(Lon.pow(2).multiply(Ele.pow(2)).multiply(1e-5))
+.add(Lat.pow(2).multiply(Lon.pow(2)).multiply(1.389))
+.add(Lon.pow(3).multiply(Lat.pow(2)).multiply(0.01364)).clip(B_SouthEast);
+
+var Brazil_EQ270 =RSouth.clip(Brazil).unmask(RNorthMidWest).unmask(RNorthEast).unmask(RSouthEast).rename('Brazil_EQ270');
+
+//////////////////////////////////////EQ Honduras 33 (Model ID 15)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_33_1 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(7).subtract(699).add(Ele.multiply(-2.719)).set('year', year);
+    return  results;
+};
+var EQ_33_2 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(7.562).subtract(3172).set('year', year);
+    return  results;
+};
+
+var R_gpcc_m=EQ_33_1(Py_GP).rename('Honduras_EQ33_gpcc');
+var R_gpcc_m2=EQ_33_2(Py_GP).rename('Honduras_EQ33_gpcc_m2');
+
+var Honduras_EQ33 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(Honduras);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ SriLanka 33 (Model ID 3)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_33_5 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(3.847).add(Ele.multiply(-4.846))
+    .add(-344).set('year', year);
+    return  results;
+};
+var EQ_33_6 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(3.771).add(-727)
+    .set('year', year);
+    return  results;
+};
+
+var R_gpcc_m=EQ_33_5(Py_GP).rename('SriLanka_EQ33_gpcc');
+var R_gpcc_m2=EQ_33_6(Py_GP).rename('SriLanka_EQ33_gpcc_m2');
+
+var SriLanka_EQ33 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(SriLanka);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ Vitnam 49&97 (Model ID 59)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_49 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(0.548257).subtract(59.9).multiply(10).set('year', year);
+    return  results;
+};
+
+var R_gpcc_m=EQ_49(Py_GP).rename('Vietnam_EQ49_gpcc');
+
+var Vietnam_EQ49 = ee.Image.cat([R_gpcc_m]).clip(Vietnam);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ Korea 62 (Model ID 31)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_62_1 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(7.41).subtract(3770).set('year', year);
+    return  results;
+};
+var EQ_62_2 = function(img2){
+    var Py = img2;
+    var results = Py.multiply(5.86).subtract(1715).set('year', year);
+    return  results;
+};
+var R_gpcc_m=EQ_62_1(Py_GP).rename('Korea_EQ62_Y_gpcc');
+var R_gpcc_m2=EQ_62_2(Py_GP).rename('Korea_EQ62_Y_gpcc_m2');
+var Korea_EQ62_Y = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(Korea);
+
+//////////////////////////////////////EQ Zambia 293 (Model ID 11)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_293_1 = function(imgc){
+    var results = imgc.map(function(i){
+     return ee.Image(10)
+     .where(i.lte(10),i.divide(10).pow(1.87).multiply(2.08).multiply(10))
+     .where(i.gt(10),i.divide(10).pow(1.91).multiply(2.36).multiply(10));
+    });
+    return  results.sum().set('year', year);
+};
+var EQ_293_2 = function(imgc){
+    var results = imgc.map(function(i){
+     return i.divide(10).pow(1.93).multiply(2.26).multiply(10);
+    });
+    return  results.sum().set('year', year);
+};
+
+var R_gpcc_m=EQ_293_1(yearwise_pre_GPd).rename('Zambia_EQ293_gpcc');
+var R_gpcc_m2=EQ_293_2(yearwise_pre_GPd).rename('Zambia_EQ293_gpcc_m2');
+
+var Zambia_EQ293 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(Zambia);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ Japan 294 (Model ID 41)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_294 = function(imgc1){
+  var func_month = function(date){
+    var m = ee.Number(date).add(29).divide(30).toInt();
+    var alpha = ee.Image(Math.PI)
+    .multiply(m.multiply(2).add(-8.01)).divide(12).cos()
+    .multiply(0.866).add(1).multiply(0.777);
+    var beta = 1.53;
+    var Pd = imgc1.filter(ee.Filter.gte('date',date))
+      .filter(ee.Filter.lte('date',ee.Number(date).add(29)));
+    var R_month = Pd.map(function(i){
+      var Rd=i.pow(beta).multiply(alpha);
+      return Rd;
+    });//calculate R per halfmonth;
+    return R_month.set('month',m).sum().set('year', year);
+  };
+return  ee.ImageCollection(month_360.map(func_month));};
+
+var R_gpcc_m=EQ_294(yearwise_pre_GPd12).sum().rename('Japan_EQ294_gpcc');
+var Japan_EQ294 = ee.Image.cat([R_gpcc_m]).clip(Japan);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ 295_Africa (Model ID 38)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var yearwise_pre_GPm85p = yearwise_pre_GPm.reduce(ee.Reducer.percentile({
+		percentiles:[85] }));
+var EQ_295 = function(img1){
+  var n = Lat.multiply(-0.01).add(Lon.pow(3).multiply(-0.000003).add(10))
+  .multiply(Ele.multiply(-0.0001).add(1));
+  return img1.pow(1.271).multiply(n).set('year', year);
+};
+
+var R_gpcc_m=EQ_295(yearwise_pre_GPm85p).rename('Africa_EQ295_gpcc');
+var Africa_EQ295 = ee.Image.cat([R_gpcc_m]).clip(Africa);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ 296_CapeVerde (Model ID 42)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_296_1 = function(imgc1){
+  var Pd = imgc1;
+  var result = Pd.map(function(i)
+  {return i.pow(1.58).multiply(0.723)}).sum();
+ return result.set('year', year)};
+ 
+var EQ_296_2 = function(imgc2){
+  var Pd = imgc2;
+  var result = Pd.map(function(i)
+  {return i.pow(1.31).multiply(2.6)}).sum();
+ return result.set('year', year)};
+ 
+var EQ_296_3 = function(img1){
+    var Py = img1;
+    var results = Py.pow(1.68).multiply(0.1).set('year', year);
+    return  results;
+};
+
+var EQ_296_4 = function(img1){
+    var MFI = img1;
+    var results = MFI.pow(1.66).multiply(4.88).set('year', year);
+    return  results;
+};
+
+var R_gpcc_m=EQ_296_1(yearwise_pre_GPd).rename('CapeVerde_EQ296_gpcc');
+var R_gpcc_m2=EQ_296_2(yearwise_pre_GPd).rename('CapeVerde_EQ296_gpcc_m2');
+var R_gpcc_m3=EQ_296_3(Py_GP).rename('CapeVerde_EQ296_gpcc_m3');
+var R_gpcc_m4=EQ_296_4(MFI_GP).rename('CapeVerde_EQ296_gpcc_m4');
+
+var CapeVerde_EQ296 = 
+ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m3,R_gpcc_m4]).clip(CapeVerde);
+
+var EQ_270_296 = ee.Image.cat([Brazil_EQ270 
+, Honduras_EQ33,SriLanka_EQ33, Vietnam_EQ49,Korea_EQ62_Y,
+Zambia_EQ293,Japan_EQ294,Africa_EQ295,CapeVerde_EQ296]).toUint16();
+  return {'EQ_270_296': EQ_270_296};
+};
