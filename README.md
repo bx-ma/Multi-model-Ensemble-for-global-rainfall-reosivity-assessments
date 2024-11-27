@@ -5,6 +5,7 @@ Here, the calculation of the multi-model ensemble on the Google Earth Engine pla
 
 # Usages
 Several files are contained in the workflow: 
+
 1. 
 The functions of producing climatic parameters are GPCC_MO and GPCC_DA. The climatic parameters are used for rainfall erosivity calculation. Resave the GPCC_MO and GPCC_DA as Scripts on GEE, then users can use them like "var Fun_EQ_GPCC_MO = require('users/your GEE project name/your GEE Script name (like "functions:GPCC_Compiled_Erosivity_Global").your function name().your parameter();". The usage of GPCC_MO and GPCC_DA have been used in the functions of producing rainfall erosivity layer stacks (step 2, 3, and 4).
 
@@ -14,11 +15,11 @@ GPCC_Compiled_Erosivity_Global (1-5) contain the calculation functions and appli
 These function have been uused in the main function and the functions of the model ensemble.
 
 3.
-The main functions of running the functions of producing rainfall erosivity layer stacks are: Rainfall_erosivity_function_Export.
+The main codes of running the functions of producing rainfall erosivity layer stacks are: Rainfall_erosivity_function_Export.
 This function could be run to produce rainfall erosivity images to GEE ASSET or CloudStorage.
 
 4.
-The functions of the model ensemble are: Model_ensemble
+The codes of the model ensemble are: Model_ensemble
 This function call the rainfall erosivity images in GEE ASSET and produce an ImageCollection, then an average is of the ImageCollection reduced to map global rainfall erosivity.
 
 
