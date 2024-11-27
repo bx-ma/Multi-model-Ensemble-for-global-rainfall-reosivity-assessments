@@ -15,7 +15,7 @@ GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month")
     time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month"),
     GPCC_DA = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_day"),
     time_DA = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/time_day"),
-
+    EURes79 = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/EURes79");
 
 //********************************************************************************************//
 //****************************function main body******************************************//
