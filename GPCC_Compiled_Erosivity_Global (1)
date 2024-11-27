@@ -128,6 +128,9 @@ var Australia=GLB.filter(ee.Filter.eq('ADM0_NAME','Australia'));
 var SpainCatalunya = GLB.filter(ee.Filter.eq('ADM0_NAME','Spain'))
 .filter(ee.Filter.eq('ADM1_NAME','Cataluña/Catalunya'));
 
+////////////////////////////////////EQ Hawaii\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Hawai = GLB.filter(ee.Filter.eq('ADM1_CODE',3225));
+
 ///////////////////////////////////////Preparation\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var year=require('users/zrjnwafu/functions:time').year;
 var month1=01;
@@ -515,12 +518,22 @@ var R_era5_m3=EQ_146_3(yearwise_pre_GPd,yearwise_pre_GPdm,yearwise_pre_GPm)
 .sum().rename('England_EQ146_gpcc_m3');
 var England_EQ146 = ee.Image.cat([R_era5_m,R_era5_m2,R_era5_m3]).clip(England);
 
+var EQ_62 = function(img){
+    var Py = img;
+    var a1 = 3.48;
+    var a2 = 38.46;
+    var Ry = Py.multiply(a1).add(a2).set('year', year);
+    return  Ry;
+};
+var R_gpcc_m=EQ_62(Py_GP).rename('Hawai_EQ62_gpcc');
+var Hawai_EQ62 =ee.Image.cat([R_gpcc_m]).clip(Hawai);
+
 var EQ_111_248= ee.Image.cat([
 BrazilES_EQ139, ChinaChongqing_EQ16
 ,England_EQ146,Ethiopia_EQ157,
 Slovenia_EQ149,BrazilJaneiro_EQ188
 ,Malaysia_EQ121,Cuba_EQ219,Australia_EQ104,
-SpainCatalunya_EQ136142,
+SpainCatalunya_EQ136142,Hawai_EQ62
 ]).toUint16();
 
 return {'EQ_111_248': EQ_111_248};};
