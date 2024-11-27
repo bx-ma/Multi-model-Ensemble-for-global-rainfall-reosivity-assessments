@@ -1,0 +1,862 @@
+
+// ****************************************************************************************************************** //
+// *********** The functions of producing rainfall erosivity layer stacks *************** //
+// ****************************************************************************************************************** //
+
+//********************************************************************************************//
+//****************************Load the datasets******************************************//
+//**********************************************************************************************//
+var LSIB = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017"),
+GLB = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level1"),
+SRTM = ee.Image("CGIAR/SRTM90_V4"),
+    GMTED = ee.Image("USGS/GMTED2010"),
+    MODIS_PET = ee.ImageCollection("MODIS/061/MOD16A2GF"),
+    GLB2 = ee.FeatureCollection("FAO/GAUL/2015/level2"),
+GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month"),
+    time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month"),
+    GPCC_DA = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_day"),
+    time_DA = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/time_day"),
+    A_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/A_Iran"),
+    B_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/B_Iran"),
+    C_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/C_Iran"),
+    D_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/D_Iran"),
+    E_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/E_Iran"),
+    F_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/F_Iran"),
+    G_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/G_Iran"),
+    MexicoRex = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/MexicoRegions"),
+    KG_CZ = ee.Image("users/fsn1995/Global_19862010_KG_5m");
+
+
+//********************************************************************************************//
+//****************************function main body******************************************//
+//**********************************************************************************************//
+
+exports.gpcc189_60=function(){//////////////////////////////////////
+var country_co= LSIB.select("country_co");
+
+//////////////////////////////////////EQ Korea 196\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Korea = GLB.filter(ee.Filter.eq('ADM0_NAME','Republic of Korea'));
+var Geum = Korea
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Chungchongnam-do')
+,ee.Filter.eq('ADM1_NAME','Chollabuk-do')));
+var Southcoast = Korea
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Chollanam-do')
+,ee.Filter.eq('ADM1_NAME','Kwangju'),ee.Filter.eq('ADM1_NAME','Kyongsangnam-do')
+,ee.Filter.eq('ADM1_NAME','Cheju-do')));
+var Nakdong = Korea
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Kyongsangbuk-do')
+,ee.Filter.eq('ADM1_NAME','Taegu')));
+var Han = Korea
+.filter(ee.Filter.or(ee.Filter.eq('ADM1_NAME','Kyonggi-do')
+,ee.Filter.eq('ADM1_NAME','Seoul'),
+ee.Filter.eq('ADM1_NAME','Chungchongbuk-do')
+,ee.Filter.eq('ADM1_NAME','Kang-won-do')));
+
+//////////////////////////////////////EQ EastAF 228\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Tanzania = GLB.filter(ee.Filter.eq('ADM0_NAME','United Republic of Tanzania'));
+var Kenya = GLB.filter(ee.Filter.eq('ADM0_NAME','Kenya'));
+var EastAF = GLB.filter(ee.Filter.or(ee.Filter.eq('ADM0_NAME','United Republic of Tanzania'),
+ee.Filter.eq('ADM0_NAME','Kenya'),ee.Filter.eq('ADM0_NAME','Uganda'))).union(1e5).geometry();
+
+//////////////////////////////////////EQ China 8-9\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var China = GLB.filter(ee.Filter.eq('ADM0_NAME','China'));
+
+/////////////////////////////////////EQ 26_28_AlbaniaItaly\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var AlbaniaItaly = GLB.filter(ee.Filter.or(ee.Filter.eq('ADM0_NAME','Italy'),
+ee.Filter.eq('ADM0_NAME','Albania')));
+
+/////////////////////////////////////EQ Germany 19\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Germany = country_co.filter(ee.Filter.eq('country_co','GM'));
+
+/////////////////////////////////////EQ Austria 1938\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Austria = country_co.filter(ee.Filter.eq('country_co','AU'));
+
+/////////////////////////////////////EQ Czechia 1936\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Czechia = country_co.filter(ee.Filter.eq('country_co','EZ'));
+
+//////////////////////////////////////EQ Jordan 61\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Jordan = country_co.filter(ee.Filter.eq('country_co','JO'));
+
+//////////////////////////////////////EQ Iran 78\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Iran=country_co.filter(ee.Filter.eq('country_co','IR'));
+
+//////////////////////////////////////EQ Colombia 50\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ColombiaCauca = GLB.filter(ee.Filter.eq('ADM0_NAME','Colombia'))
+.filter(ee.Filter.eq('ADM1_NAME','Cauca'));
+
+//////////////////////////////////////EQ ChileCoquimbo 60\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChileCoquimbo = GLB.filter(ee.Filter.eq('ADM0_NAME','Chile'))
+.filter(ee.Filter.eq('ADM1_NAME','Coquimbo'));
+
+//////////////////////////////////////EQ Australia 91\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Australia=GLB.filter(ee.Filter.eq('ADM0_NAME','Australia'));
+
+//////////////////////////////////////EQ Spain 192\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Spain = GLB.filter(ee.Filter.eq('ADM0_NAME','Spain'));
+
+//////////////////////////////////////EQ BrazilRGDN 220\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilRGDN = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Rio Grande Do Norte'));
+
+//////////////////////////////////////EQ BrazilAlagoas 232\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var BrazilAlagoas = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'))
+.filter(ee.Filter.eq('ADM1_NAME','Alagoas'));
+
+//////////////////////////////////////EQ Portugal 243\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Portugal = GLB.filter(ee.Filter.eq('ADM0_NAME','Portugal'));
+
+//////////////////////////////////////EQ MexicoRe14 254\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+MexicoRex = MexicoRex.toList(14);
+var Mexico = GLB.filter(ee.Filter.eq('ADM0_NAME','Mexico'));
+var Re1=ee.Feature(MexicoRex.get(0));
+var Re2=ee.Feature(MexicoRex.get(1));
+var Re3=ee.Feature(MexicoRex.get(2));
+var Re4=ee.Feature(MexicoRex.get(3));
+var Re5=ee.Feature(MexicoRex.get(4));
+var Re6=ee.Feature(MexicoRex.get(5));
+var Re7=ee.Feature(MexicoRex.get(6));
+var Re8=ee.Feature(MexicoRex.get(7));
+var Re9=ee.Feature(MexicoRex.get(8));
+var Re10=ee.Feature(MexicoRex.get(9));
+var Re11=ee.Feature(MexicoRex.get(10));
+var Re12=ee.Feature(MexicoRex.get(11));
+var Re13=ee.Feature(MexicoRex.get(12));
+var Re14=ee.Feature(MexicoRex.get(13));
+
+//////////////////////////////////////EQ ChileAraucania 32\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ChileAraucania = GLB.filter(ee.Filter.eq('ADM0_NAME','Chile'))
+.filter(ee.Filter.eq('ADM1_NAME','Araucania'));
+
+//////////////////////////////////////EQ Brazil 235\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Brazil = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'));
+
+//////////////////////////////////////EQ India KG CZ 71\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var India_Cold = KG_CZ.eq(15).clip(India.geometry());
+var India_Desert = KG_CZ.eq(6).clip(India.geometry());
+var India_Semiarid = KG_CZ.eq(4).clip(India.geometry());
+var India_Tem = KG_CZ.eq(14).or(KG_CZ.eq(11)).clip(India.geometry());
+var India_Trosava = KG_CZ.eq(3).or(KG_CZ.eq(2)).clip(India.geometry());
+var India_Tromon = KG_CZ.eq(1).clip(India.geometry());
+
+
+///////////////////////////////////////Preparation\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var year=require('users/zrjnwafu/functions:time').year;
+var month1=01;
+var month12=12;
+var startdate=ee.Date.fromYMD({year:year,month:month1,day:1});
+var enddate=ee.Date.fromYMD({year:year,month:month12,day:31});
+
+var getDaysInYear = function(m) {
+  var date = ee.Date.fromYMD(year,m,1);  
+  var nextYear = date.advance(1, 'year');
+  var days = nextYear.difference(date, 'day'); 
+  return days;};
+var days = getDaysInYear(1); 
+
+var getMonthsInYear = function(year) {
+  var date = ee.Date.fromYMD(year, month1, 1);  
+  var nextYear = date.advance(1, 'year');
+  var months = nextYear.difference(date, 'month');  
+  return months;  
+};
+var months = getMonthsInYear(year);
+var date = ee.List.sequence(1,364);
+var month_12 = ee.List.sequence(1, 12);
+var month_360 = ee.List.sequence(1, 360,30);
+var halfmonth_list = ee.List.sequence(1, 360, 15);
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var CollectionFunc = require('users/zrjnwafu/functions:FromImages2Collection');
+var GPCC_monthCol = CollectionFunc.FromImages2Collection_func(GPCC_MO,time_MO).imgCol;
+var GPCC_MO_load = require('users/zrjnwafu/functions:GPCC_MO');
+var GPCC_MO_processed = GPCC_MO_load.GPCC_MO_func(GPCC_monthCol);
+//GPCC MONTHLY MFI
+var yearwise_pre_GPm = GPCC_MO_processed.yearwise_pre_GPm;
+var Py_GP = GPCC_MO_processed.Py_GP;
+var Rc_GP = GPCC_MO_processed.Rc_GP;
+var MFI_GP = GPCC_MO_processed.MFI_GP;
+var P6_9m_GP = GPCC_MO_processed.P6_9m_GP;
+var P5_10m_GP = GPCC_MO_processed.P5_10m_GP;
+var P4_10m_GP = GPCC_MO_processed.P4_10m_GP;
+var P10_5m_GP = GPCC_MO_processed.P10_5m_GP;
+var Pmmax_GP = GPCC_MO_processed.Pmmax_GP;
+var CV_GP = GPCC_MO_processed.CV_GP;
+var FF_GP = GPCC_MO_processed.FF_GP;
+var PCI_GP = GPCC_MO_processed.PCI_GP;
+var SI_GP = GPCC_MO_processed.SI_GP;
+var FI_GP = GPCC_MO_processed.FI_GP;
+var Pspring_GP = GPCC_MO_processed.Pspring_GP;
+var Psummer_GP = GPCC_MO_processed.Psummer_GP;
+var Pautumn_GP = GPCC_MO_processed.Pautumn_GP;
+var Pwinner_GP = GPCC_MO_processed.Pwinner_GP;
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var GPCC_dayCol = CollectionFunc.FromImages2Collection_func(GPCC_DA,time_DA).imgCol;
+var GPCC_DA_load = require('users/zrjnwafu/functions:GPCC_DA');
+var GPCC_DA_processed = GPCC_DA_load.GPCC_DA_func(GPCC_dayCol,GPCC_monthCol);
+//GPCC daily MFI
+var yearwise_pre_GPd = GPCC_DA_processed.yearwise_pre_GPd;
+var yearwise_pre_GPd4 = GPCC_DA_processed.yearwise_pre_GPd4;
+var yearwise_pre_GPd8 = GPCC_DA_processed.yearwise_pre_GPd8;
+var yearwise_pre_GPd10 = GPCC_DA_processed.yearwise_pre_GPd10;
+var yearwise_pre_GPd12 = GPCC_DA_processed.yearwise_pre_GPd12;
+var Days_GPm10 = GPCC_DA_processed.Days_GPm10;
+var P_GPm10 = GPCC_DA_processed.P_GPm10;
+var Days_GPm = GPCC_DA_processed.Days_GPm;
+var Days_GP = GPCC_DA_processed.Days_GP;
+var yearwise_pre_GPdm = GPCC_DA_processed.yearwise_pre_GPdm;
+var F24_GP = GPCC_DA_processed.F24_GP;
+var MFI_GPd = GPCC_DA_processed.MFI_GPd;
+var PCI_GPd = GPCC_DA_processed.PCI_GPd;
+///////////////////////////////////////Functions\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Ele = GMTED;
+var PET=MODIS_PET.select('PET').filterDate(startdate,enddate)
+.mean().multiply(0.1).divide(8).multiply(365);
+var Lon = ee.Image.pixelLonLat().select('longitude');
+var Lat = ee.Image.pixelLonLat().select('latitude');
+
+//////////////////////////////////////EQ Korea 196 (Model ID53)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+/*var EQ_196_1 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(5.03).subtract(2020).set('year', year);
+    return  results;
+};*/
+var EQ_196_2 = function(img2){
+    var Py = img2;
+    var results = Py.multiply(5.35).subtract(2303).set('year', year);
+    return  results;
+};
+var EQ_196_3 = function(img3){
+    var Py = img3;
+    var results = Py.multiply(6.41).subtract(3550).set('year', year);
+    return  results;
+};
+var EQ_196_5 = function(img){
+    var Py = img;
+    var a1 = 5.35;
+    var a2 = -2668;
+    var results_a = Py.multiply(a1).add(a2)
+    .clip(Nakdong).set('year', year);
+    
+    var c1 = 10.87;
+    var c2 = -8181;
+    var results_c = Py.multiply(c1).add(c2)
+    .clip(Geum).set('year', year);
+
+    var d1 = 9.23;
+    var d2 = -6441;
+    var results_d = Py.multiply(d1).add(d2)
+    .clip(Han).set('year', year);
+
+    var f1 = 7.27;
+    var f2 = -4765;
+    var results_f = Py.multiply(f1).add(f2)
+    .clip(Southcoast).set('year', year);
+    
+    var results = results_a.clip(Korea)
+    .unmask(results_c).unmask(results_d)
+    .unmask(results_f);
+    
+    return  results;
+};
+
+//var R_gpcc_m=EQ_196_1(Py_GP).rename('Korea_EQ196_gpcc');
+var R_gpcc_m2=EQ_196_2(Py_GP).rename('Korea_EQ196_gpcc_m2');
+var R_gpcc_m3=EQ_196_3(Py_GP).rename('Korea_EQ196_gpcc_m3');
+var R_gpcc_m5=EQ_196_5(Py_GP).rename('Korea_EQ196_gpcc_m5');
+
+var Korea_EQ196 = ee.Image.cat([R_gpcc_m2,R_gpcc_m3,R_gpcc_m5]).clip(Korea);
+
+//////////////////////////////////////EQ EastAfrica 228 (Model ID5)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_228 = function(img1){
+    var Py = img1;
+    
+    var b1 = 11.36;
+    var b2 = -701;
+    var result_b = Py.clip(EastAF).updateMask(Ele.lt(1250))
+    .multiply(b1).add(b2).set('year', year);
+
+    var c1 = 3.96;
+    var c2 = 3122;
+    var result_c = Py.clip(EastAF).updateMask(Ele.gte(1250))
+    .multiply(c1).add(c2).set('year', year);
+
+    var d1 = 16.58;
+    var d2 = -6963;
+    var result_d = Py.clip(Uganda)
+    .multiply(d1).add(d2).set('year', year);
+    
+    var results = ee.ImageCollection([result_b,result_c,result_d])
+    .mosaic().multiply(0.029).add(-26).multiply(17.02);
+    
+    return  results;
+};
+var R_gpcc_m=EQ_228(Py_GP).rename('EastAfrica_EQ228_gpcc');
+var EastAfrica_EQ228 = ee.Image.cat([R_gpcc_m]).clamp(0,100000).clip(EastAF);
+
+/////////////////////////////////////EQ Spain 192 (Model ID 25)\\\\\\\\\\\\\\\\\\\\\\\\\\\\//////////////
+var alphalist=ee.List([0.08,0.09,0.10,0.10,0.11,0.13,0.14,0.15,0.12,0.10,0.08,0.07]);
+var betalist=ee.List([1.60,1.65,1.70,1.72,1.80,1.90,2.00,2.00,1.90,1.75,1.70,1.65]);
+var EQ_192 = function(imgc1){
+  var func_month = function(date){
+    var m = ee.Number(date).add(29).divide(30).toInt();
+    var alpha = alphalist.getNumber(m.subtract(1));
+    var beta = betalist.getNumber(m.subtract(1));
+    var Pd = imgc1.filter(ee.Filter.gte('date',date))
+      .filter(ee.Filter.lte('date',ee.Number(date).add(29)));
+    var R_month = Pd.map(function(i){
+      var Rd=i.pow(beta).multiply(alpha);
+      return Rd;
+    }).sum();//calculate R per halfmonth;
+    return R_month.set('month',m);
+  };
+return  ee.ImageCollection(month_360.map(func_month));
+};
+var R_gpcc_m=EQ_192(yearwise_pre_GPd12).sum().rename('Spain_EQ192_gpcc');
+var Spain_EQ192 =ee.Image.cat([R_gpcc_m]).clip(Spain);
+
+//////////////////////////////////////EQ China 8&9 (Model ID 50)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+function ER_8_9(image) {
+  return image.pow(1.7265).copyProperties(image, image.propertyNames());
+}
+var function_eq8_9=function(imgc){var R_d1=imgc.filter(ee.Filter.gte('date',1)).filter(ee.Filter.lte('date',120)).map(ER_8_9).sum().multiply(ee.Image(0.3101)).unmask(ee.Image.constant(0));
+var R_d2=imgc.filter(ee.Filter.gte('date',121)).filter(ee.Filter.lte('date',273)).map(ER_8_9).sum().multiply(ee.Image(0.3937)).unmask(ee.Image.constant(0));
+var R_d3=imgc.filter(ee.Filter.gte('date',274)).filter(ee.Filter.lte('date',365)).map(ER_8_9).sum().multiply(ee.Image(0.3101)).unmask(ee.Image.constant(0));
+return R_d1.add(R_d2).add(R_d3).rename('R');
+};
+var R_gpcc_m=function_eq8_9(yearwise_pre_GPd10).rename(' China _EQ_8_9_gpcc');
+var China _EQ_8_9 =ee.Image.cat([R_gpcc_m]).clip(China);
+
+//////////////////////////////////////EQ Australia 91 (Model ID 44)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_91 = function(imgc){
+  var func_month2 = function(date){
+    var Pd12 = imgc.filter(ee.Filter.gte('date',date))
+      .filter(ee.Filter.lte('date',ee.Number(date).add(29)));
+    var month = ee.Number(date).add(29).divide(30).toInt();
+    var beta = Lat.multiply(-0.0209).add(1.02);
+    var alpha = ee.Image(10).pow(beta.multiply(-1.58).add(2.08))
+    .multiply(1.05).multiply(Lat.multiply(0.0404).add(Ele.multiply(-0.0002684)).add(2.349))
+    .multiply(month.subtract(1)
+    .multiply(Math.PI).divide(6).cos().multiply(0.389).add(1)).rename('alpha');
+    var R_month = Pd12
+      .map(function(img)
+      {return img.pow(beta).multiply(alpha)}).sum();//calculate R per halfmonth;DEM
+    return R_month.set('month',month);
+  };
+return  ee.ImageCollection(month_360.map(func_month2));
+};
+var R_gpcc_m=EQ_91(yearwise_pre_GPd12).sum().rename('Australia_EQ91_gpcc');
+var Australia_EQ91 =ee.Image.cat([R_gpcc_m]).clip(Australia);
+
+//////////////////////////////////////EQ BrazilRGDN 220 (Model ID 61)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_220_1 = function(imgc){
+  var Rc = imgc;
+  var R = Rc.map(function(i){
+    var r=i.pow(0.6934).multiply(103.86);
+    return r;
+  });
+  return R.sum();
+  };
+var EQ_220_2 = function(imgc){
+  var Rc = imgc;
+  var R = Rc.map(function(i){
+    var r=i.pow(0.7134).multiply(99.749);
+    return r;
+  });
+  return R.sum();
+  };
+var EQ_220_3 = function(imgc){
+  var Rc = imgc;
+  var R = Rc.map(function(i){
+    var r=i.pow(0.706).multiply(111.68);
+    return r;
+  });
+  return R.sum();
+  };
+
+var R_gpcc_m=EQ_220_1(Rc_GP).rename('BrazilRGDN_EQ220_gpcc');
+var R_gpcc_m2=EQ_220_2(Rc_GP).rename('BrazilRGDN_EQ220_gpcc_m2');
+var R_gpcc_m3=EQ_220_3(Rc_GP).rename('BrazilRGDN_EQ220_gpcc_m3');
+
+var BrazilRGDN_EQ220 = ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m3]).clip(BrazilRGDN);
+
+//////////////////////////////////////EQ BrazilAlagoas 232 (Model ID 66)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_232 = function(imgc){
+  var Rc = imgc;
+  var R = Rc.map(function(i){
+    var r=i.pow(0.85).multiply(67.355);
+    return r;
+  });
+  return R.sum();
+  };
+var R_gpcc_m=EQ_232(Rc_GP).rename('BrazilAlagoas_EQ232_gpcc');
+var BrazilAlagoas_EQ232 = ee.Image.cat([R_gpcc_m]).clip(BrazilAlagoas);
+
+//////////////////////////////////////EQ Brazil 235 (Model ID 39)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_235 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(5.9694).add(-57.398).set('year', year);
+    return  results;
+};
+var R_gpcc_m=EQ_235(Py_GP).rename('Brazil_EQ235_gpcc');
+var Brazil_EQ235 = ee.Image.cat([R_gpcc_m]).clip(Brazil);
+
+//////////////////////////////////////EQ Portugal 243 (Model ID 17)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_243 = function(img1){
+    var Py = img1;
+    var results = Py.multiply(1.42).add(-500)
+    .set('year', year);
+    return  results;
+};
+var R_gpcc_m=EQ_243(Py_GP).rename('Portugal_EQ243_gpcc');
+var Portugal_EQ243 = ee.Image.cat([R_gpcc_m]).clip(Portugal);
+
+//////////////////////////////////////EQ MexicoRe14 254 (Model ID 33)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_254 = function(img1){
+    var Py = img1;
+    var a1 = 0.002276;
+    var a2 = 1.2078;
+    var results_1 = Py.pow(2).multiply(a1).add(Py.multiply(a2))
+    .clip(Re1).set('year', year);
+    
+    var b1 = 0.00647;
+    var b2 = 3.4555;
+    var results_2 = Py.pow(2).multiply(b1).add(Py.multiply(b2))
+    .clip(Re2).set('year', year);
+    
+    var c1 = -0.00172;
+    var c2 = 3.6752;
+    var results_3 = Py.pow(2).multiply(c1).add(Py.multiply(c2))
+    .clip(Re3).set('year', year);
+    
+    var d1 = 0.002983;
+    var d2 = 2.8959;
+    var results_4 = Py.pow(2).multiply(d1).add(Py.multiply(d2))
+    .clip(Re4).set('year', year);
+
+    var e1 = -0.000188;
+    var e2 = 3.488;
+    var results_5 = Py.pow(2).multiply(e1).add(Py.multiply(e2))
+    .clip(Re5).set('year', year);
+    
+    var f1 = 0.00168;
+    var f2 = 6.6847;
+    var results_6 = Py.pow(2).multiply(f1).add(Py.multiply(f2))
+    .clip(Re6).set('year', year);
+    
+    var g1 = 0.0061;
+    var g2 = -0.0334;
+    var results_7 = Py.pow(2).multiply(g1).add(Py.multiply(g2))
+    .clip(Re7).set('year', year);
+    
+    var h1 = 0.00327;
+    var h2 = 1.9967;
+    var results_8 = Py.pow(2).multiply(h1).add(Py.multiply(h2))
+    .clip(Re8).set('year', year);
+    
+    var i1 = -0.002096;
+    var i2 = 7.0458;
+    var results_9 = Py.pow(2).multiply(i1).add(Py.multiply(i2))
+    .clip(Re9).set('year', year);
+    
+    var j1 = 0.000442;
+    var j2 = 6.8938;
+    var results_10 = Py.pow(2).multiply(j1).add(Py.multiply(j2))
+    .clip(Re10).set('year', year);
+    
+    var k1 = 0.00454;
+    var k2 = 3.7745;
+    var results_11 = Py.pow(2).multiply(k1).add(Py.multiply(k2))
+    .clip(Re11).set('year', year);
+    
+    var l1 = 0.006067;
+    var l2 = 2.4619;
+    var results_12 = Py.pow(2).multiply(l1).add(Py.multiply(l2))
+    .clip(Re12).set('year', year);
+
+    var m1 = -0.001008;
+    var m2 = 10.7427;
+    var results_13 = Py.pow(2).multiply(m1).add(Py.multiply(m2))
+    .clip(Re13).set('year', year);
+    
+    var n1 = 0.00264;
+    var n2 = 1.5005;
+    var results_14 = Py.pow(2).multiply(n1).add(Py.multiply(n2))
+    .clip(Re14).set('year', year);
+    
+    var results = ee.ImageCollection.fromImages([results_1,results_2,results_3,results_4,
+    results_5,results_6,results_7,results_8,results_9,results_10,results_11,results_12,
+    results_13,results_14]).mosaic();
+  
+    return  results;
+};
+var R_gpcc_m=EQ_254(Py_GP).rename('MexicoRe_EQ254_gpcc');
+var MexicoRe_EQ254 = ee.Image.cat([R_gpcc_m]).clip(Mexico);
+
+
+//////////////////////////////////////EQ ChileAraucania 32 (Model ID 28)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_32_1 = function(img1){
+    var Py = img1;
+    var results = Py.pow(1.617).multiply(0.015).set('year', year);
+    return  results;
+};
+var EQ_32_2 = function(img1){
+    var Py = img1;
+    var results = Py.pow(1.534).multiply(0.028).set('year', year);
+    return  results;
+};
+
+var R_gpcc_m=EQ_32_1(Py_GP).rename('ChileAraucania_EQ32_gpcc');
+var R_gpcc_m2=EQ_32_2(Py_GP).rename('ChileAraucania_EQ32_gpcc_m2');
+
+var ChileAraucania_EQ32 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(ChileAraucania);
+
+//////////////////////////////////////EQ India 71 (Model ID 76)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_71_1 = function(imgc1){
+  var b1 = ee.Number(1.814);//India_Tromon
+  var b2 = ee.Number(1.9);//India_Desert
+  var b3 = ee.Number(2.063);//India_Semiarid
+  var b4 = ee.Number(1.93);//India_Trosava
+  var b5 = ee.Number(1.92);//India_Tem
+
+  var R_day1 = imgc1.map(function(img)
+      {return img.pow(b1).multiply(ee.Image(10).pow(b1.multiply(-1.37).add(1.98)));});
+var R1 = R_day1.sum().updateMask(India_Tromon);
+
+var R_day2 = imgc1.map(function(img)
+      {return img.pow(b2).multiply(ee.Image(10).pow(b2.multiply(-1.37).add(1.98)));});
+var R2 = R_day2.sum().updateMask(India_Desert);
+
+var R_day3 = imgc1.map(function(img)
+      {return img.pow(b3).multiply(ee.Image(10).pow(b3.multiply(-1.37).add(1.98)));});
+var R3 = R_day3.sum().updateMask(India_Semiarid);
+
+var R_day4 = imgc1.map(function(img)
+      {return img.pow(b4).multiply(ee.Image(10).pow(b4.multiply(-1.37).add(1.98)));});
+var R4 = R_day4.sum().updateMask(India_Trosava);  
+ 
+var R_day5 = imgc1.map(function(img)
+      {return img.pow(b5).multiply(ee.Image(10).pow(b5.multiply(-1.37).add(1.98)));});
+var R5 = R_day5.sum().updateMask(India_Tem);
+
+var R_re = R1.unmask(R2).unmask(R3).unmask(R4).unmask(R5).set('year',year);
+  return R_re;
+};
+var EQ_71_2 = function(imgc1){
+  var R1 = imgc1.map(function(img)
+      {return img.pow(1.974).multiply(0.212);});
+  return R1.set('year',year);
+};
+var R_gpcc_m=EQ_71_1(yearwise_pre_GPd12).rename('India_EQ71_gpcc');
+var R_gpcc_m2=EQ_71_2(yearwise_pre_GPd12).sum().rename('India_EQ71_gpcc_m2');
+var India_EQ71 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(India);
+
+//////////////////////////////////////EQ AlbaniaItaly 26-28 (Model ID 22)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_28 = function(imgc){
+  var func_PM = function(m){
+    var Pm = imgc.filter(ee.Filter.eq('month',m)).sum();
+    var alpha = 0.207;
+    var fm=ee.Image(0.3696).multiply(ee.Number(m).multiply(Math.PI).multiply(2)
+    .divide(ee.Number(m).add(2.9048)).cos().multiply(-1.0888).add(1));
+    var fel=ee.Image(0.3024).add(Ele.pow(0.5).multiply(0.0013848).multiply(Lat.multiply(-1).add(41)))
+    .add(Ele.pow(0.5).multiply(Lat.multiply(-1).add(41)).pow(2).multiply(-0.0000138092));
+    var R_month = Pm.multiply(fm).add(fel).pow(1.561).multiply(alpha);//calculate R per halfmonth;
+    return R_month.set('month',m);
+  };
+return  ee.ImageCollection(month_12.map(func_PM)).sum();
+};
+
+var R_gpcc_m3=EQ_28(yearwise_pre_GPm).rename('AlbaniaItaly_EQ28_gpcc_m3');
+var AlbaniaItaly_EQ28 = ee.Image.cat([R_gpcc_m3]).clip(AlbaniaItaly);
+
+//////////////////////////////////////EQ Czech 19 (Model ID 55)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_19_1 = function(img1){
+    var Py = img1;
+    var R_y = Py.multiply(0.833).add(17.3);//calculate R per halfmonth;
+    return R_y;
+  };
+var EQ_19_2 = function(img2){
+    var P5_10th = img2;
+    var R_y = P5_10th.multiply(2.1).subtract(265);//calculate R per halfmonth;
+    return R_y;
+  };
+var EQ_20_1 = function(img3){
+    var P5_10th = img3;
+    var R_y = P5_10th.multiply(0.65).add(180.25);//calculate R per halfmonth;
+    return R_y;
+  };
+var EQ_20_2 = function(img4){
+    var Py = img4;
+    var R_y = Py.multiply(0.58).add(105);//calculate R per halfmonth;
+    return R_y;
+  };
+var coeff_mon5 = function(img5){
+    var P5_10th = img5;
+    var R_y = P5_10th.multiply(0.997).add(214.59);//calculate R per halfmonth;
+    return R_y;
+  };
+var coeff_mon6 = function(img6){
+    var Py = img6;
+    var R_y = Py.multiply(0.337).add(390.93);//calculate R per halfmonth;
+    return R_y;
+  };
+var coeff_mon7 = function(img7){
+    var P5_10th = img7;
+    var R_y = P5_10th.multiply(1.41).add(-14.8);//calculate R per halfmonth;
+    return R_y;
+  };
+var coeff_mon8 = function(img8){
+    var Py = img8;
+    var R_y = Py.multiply(0.83).add(-17.7);//calculate R per halfmonth;
+    return R_y;
+  };
+
+var R_gpcc_m=EQ_19_1(Py_GP).rename('Czech_EQ19_gpcc');
+var R_gpcc_m2=EQ_19_2(P5_10m_GP).rename('Czech_EQ19_gpcc_m2');
+var R_gpcc_m3=EQ_20_1(P5_10m_GP).rename('Czech_EQ19_gpcc_m3');
+var R_gpcc_m4=EQ_20_2(Py_GP).rename('Czech_EQ19_gpcc_m4');
+var R_gpcc_m5=coeff_mon5(P5_10m_GP).rename('Czech_EQ19_gpcc_m5');
+var R_gpcc_m6=coeff_mon6(Py_GP).rename('Czech_EQ19_gpcc_m6');
+var R_gpcc_m7=coeff_mon7(P5_10m_GP).rename('Czech_EQ19_gpcc_m7');
+var R_gpcc_m8=coeff_mon8(Py_GP).rename('Czech_EQ19_gpcc_m8');
+
+var Czech_EQ19 = ee.Image.cat
+([R_gpcc_m,R_gpcc_m2,R_gpcc_m3,R_gpcc_m4,R_gpcc_m5,R_gpcc_m6,R_gpcc_m7,R_gpcc_m8]).clip(Czechia);
+
+var Germany_EQ19 = ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m7,R_gpcc_m8]).clip(Germany);
+
+//////////////////////////////////////EQ Austria 19&38 (Model ID 13)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_38_1 = function(img7){
+    var P4_10th = img7;
+    var R_y = P4_10th.multiply(2.05).add(-265);//calculate R per halfmonth;
+    return R_y;
+  };
+var R_gpcc_m=EQ_19_1(Py_GP).rename('Austria_EQ38_gpcc');
+var R_gpcc_m2=EQ_19_2(P5_10m_GP).rename('Austria_EQ38_gpcc_m2');
+var R_gpcc_m3=EQ_38_1(P4_10m_GP).rename('Austria_EQ38_gpcc_m3');
+var Austria_EQ38 = ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m3]).clip(Austria);
+
+//////////////////////////////////////EQ Jordan 61 (Model ID 26)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_61_1 = function(img1){
+    var Py = img1;
+    var beta1 = 29.12;//23.61 optional
+    var alpha1 = 0.0049;//0.0048 optional
+    var results = Py.multiply(alpha1).exp().multiply(beta1).set('year', year);
+    return  results;
+};
+var EQ_61_3 = function(img3){
+    var Py = img3;
+    var beta1 = 23.61; //optional
+    var alpha1 = 0.0048;//optional
+    var results = Py.multiply(alpha1).exp().multiply(beta1).set('year', year);
+    return  results;
+};
+var EQ_61_5 = function(img5){
+    var Py = img5;
+    var beta1 = 31.191; //optional
+    var alpha1 = 0.0046;//optional
+    var results = Py.multiply(alpha1).exp().multiply(beta1).set('year', year);
+    return  results;
+};
+
+var R_gpcc_m=EQ_61_1(Py_GP).rename('Jordan_EQ61_gpcc');
+var R_gpcc_m3=EQ_61_3(Py_GP).rename('Jordan_EQ61_gpcc_m3');
+var R_gpcc_m5=EQ_61_5(Py_GP).rename('Jordan_EQ61_gpcc_m5');
+
+var Jordan_EQ61 = ee.Image.cat([R_gpcc_m, R_gpcc_m3, R_gpcc_m5]).clip(Jordan);
+
+//////////////////////////////////////EQ Iran 78 (Model ID 68)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var EQ_78 = function(img1,img2){
+    var MFI = img1;
+    var Py = img2;
+    var beta1 = 3.532;
+    var alpha1 = 3.7628;
+    var results_1 = MFI.multiply(alpha1).subtract(beta1)
+    .set('year', year).clip(A_Iran);
+
+    var beta2 = 1.48;
+    var alpha2 = 0.98;
+    var results_2 = Py.multiply(alpha2).subtract(beta2).set('year', year)
+    .clip(C_Iran);
+
+    var betab = 0.0002;
+    var alphab = 2.3; 
+    var results_b = Py.pow(alphab).multiply(betab)
+    .add(Py.pow(1.15).multiply(0.005))
+    .add(Py.multiply(0.02).add(-12.3)).add(Py.multiply(0.009).add(0.36))
+    .add(Py.pow(2.246).multiply(4.7e-5)).divide(5)
+    .set('year', year).clip(B_Iran);
+    
+    var beta3 = 1.8311;
+    var alpha3 = 0.6919;
+    var results_3 = MFI.pow(beta3).multiply(alpha3).set('year', year)
+    .clip(F_Iran);
+
+    var beta4 = 32.375;
+    var alpha4 = 3.5759;
+    var results_4 = MFI.multiply(alpha4).subtract(beta4)
+    .set('year', year).clip(E_Iran.merge(D_Iran).geometry(10000));
+
+    var betag = 0.26428;
+    var alphag = 1.2019; 
+    var results_g = Py.pow(alphag).multiply(betag)
+    .add(Py.pow(1.2603).multiply(0.259776)).divide(2)
+    .set('year', year).clip(G_Iran);
+    
+    return  ee.ImageCollection([results_1,results_2,results_3,
+    results_b,results_g,results_4]).mosaic();
+};
+
+var R_gpcc_m=EQ_78(MFI_GP,Py_GP).rename('Iran_EQ78_gpcc');
+var Iran_EQ78 = ee.Image.cat([R_gpcc_m]).clip(Iran);
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ Colombia 50 (Model ID 19)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var coeff_mfiQ1 = function(img){
+    var Rc = img;
+    var beta = 40.41;
+    var alpha = 291.4;
+    var results = Rc.map(function(i){
+      return i.multiply(beta).add(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiM1 = function(img){
+    var Rc = img;
+    var beta = 49.62;
+    var alpha = 307.9;
+    var results = Rc.map(function(i){
+      return i.multiply(beta).add(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiE1 = function(img){
+    var Rc = img;
+    var beta = 23.52;
+    var alpha = 236.8;
+    var results = Rc.map(function(i){
+      return i.multiply(beta).add(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiL1 = function(img){
+    var Rc = img;
+    var beta = 25.41;
+    var alpha = 264.1;
+    var results = Rc.map(function(i){
+      return i.multiply(beta).add(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiT1 = function(img){
+    var Rc = img;
+    var beta = 41.11;
+    var alpha = 266.8;
+    var results = Rc.map(function(i){
+      return i.multiply(beta).add(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiR1 = function(img){
+    var Rc = img;
+    var beta = 19.36;
+    var alpha = 70.99;
+    var results = Rc.map(function(i){
+      return i.multiply(beta).add(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiQ2 = function(img){
+    var Rc = img;
+    var beta = 0.5811;
+    var alpha = 201.93;
+    var results = Rc.map(function(i){
+      return i.pow(beta).multiply(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiM2 = function(img){
+    var Rc = img;
+    var beta = 0.5174;
+    var alpha = 259.02;
+    var results = Rc.map(function(i){
+      return i.pow(beta).multiply(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiE2 = function(img){
+    var Rc = img;
+    var beta = 0.6088;
+    var alpha = 126.16;
+    var results = Rc.map(function(i){
+      return i.pow(beta).multiply(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiL2 = function(img){
+    var Rc = img;
+    var beta = 0.552;
+    var alpha = 161;
+    var results = Rc.map(function(i){
+      return i.pow(beta).multiply(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiT2 = function(img){
+    var Rc = img;
+    var beta = 0.5784;
+    var alpha = 188.55;
+    var results = Rc.map(function(i){
+      return i.pow(beta).multiply(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+var coeff_mfiR2 = function(img){
+    var Rc = img;
+    var beta = 0.6721;
+    var alpha = 58.38;
+    var results = Rc.map(function(i){
+      return i.pow(beta).multiply(alpha).set('year', year);
+    });
+    return  results.sum();
+};
+
+var R_gpcc_m=coeff_mfiQ1(Rc_GP).rename('Colombia_EQ50_gpcc');
+var R_gpcc_m2=coeff_mfiM1(Rc_GP).rename('Colombia_EQ50_gpcc_m2');
+var R_gpcc_m3=coeff_mfiE1(Rc_GP).rename('Colombia_EQ50_gpcc_m3');
+var R_gpcc_m4=coeff_mfiL1(Rc_GP).rename('Colombia_EQ50_gpcc_m4');
+var R_gpcc_m5=coeff_mfiT1(Rc_GP).rename('Colombia_EQ50_gpcc_m5');
+var R_gpcc_m6=coeff_mfiR1(Rc_GP).rename('Colombia_EQ50_gpcc_m6');
+var R_gpcc_m7=coeff_mfiQ2(Rc_GP).rename('Colombia_EQ50_gpcc_m7');
+var R_gpcc_m8=coeff_mfiM2(Rc_GP).rename('Colombia_EQ50_gpcc_m8');
+var R_gpcc_m9=coeff_mfiE2(Rc_GP).rename('Colombia_EQ50_gpcc_m9');
+var R_gpcc_m10=coeff_mfiL2(Rc_GP).rename('Colombia_EQ50_gpcc_m10');
+var R_gpcc_m11=coeff_mfiT2(Rc_GP).rename('Colombia_EQ50_gpcc_m11');
+var R_gpcc_m12=coeff_mfiR2(Rc_GP).rename('Colombia_EQ50_gpcc_m12');
+
+var ColombiaCauca_EQ50 = ee.Image.cat
+([R_gpcc_m,R_gpcc_m2,R_gpcc_m3,R_gpcc_m4,R_gpcc_m5,R_gpcc_m6,R_gpcc_m7,R_gpcc_m8,R_gpcc_m9,R_gpcc_m10,
+R_gpcc_m11,R_gpcc_m12]).clip(ColombiaCauca);
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ ChileCoquimbo 60 (Model ID 29)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_60 = function(img1){
+    var MFI = img1;
+    var results = MFI.multiply(1.6881).set('year', year);
+    return  results;
+};
+
+var R_gpcc_m=EQ_60(MFI_GP).rename('ChileCoquimbo_EQ60_gpcc');
+var ChileCoquimbo_EQ60 = ee.Image.cat([R_gpcc_m]).clip(ChileCoquimbo);
+
+
+var EQ_189_60 = ee.Image.cat([Korea_EQ196,
+EastAfrica_EQ228,Spain_EQ192, China_EQ_8_9,
+Australia_EQ91,BrazilRGDN_EQ220, ChileAraucania_EQ32,
+BrazilAlagoas_EQ232,Brazil_EQ235,Portugal_EQ243,MexicoRe_EQ254,
+India_EQ71,AlbaniaItaly_EQ28,Czech_EQ19,Austria_EQ38,Germany_EQ19,
+Jordan_EQ61,Iran_EQ78,ColombiaCauca_EQ50,ChileCoquimbo_EQ60
+]).toUint16();
+return {'EQ_189_60': EQ_189_60};};
