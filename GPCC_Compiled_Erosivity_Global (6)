@@ -1,0 +1,388 @@
+
+// ****************************************************************************************************************** //
+// *********** The functions of producing rainfall erosivity layer stacks *************** //
+// ****************************************************************************************************************** //
+
+//********************************************************************************************//
+//****************************Load the datasets******************************************//
+//**********************************************************************************************//
+var LSIB = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017"),
+GLB = ee.FeatureCollection("FAO/GAUL_SIMPLIFIED_500m/2015/level1"),
+    GMTED = ee.Image("USGS/GMTED2010"),
+    MODIS_PET = ee.ImageCollection("MODIS/061/MOD16A2GF"),
+    GLB2 = ee.FeatureCollection("FAO/GAUL/2015/level2"),
+    GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month"),
+    time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month"),
+    GPCC_DA = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_day"),
+    time_DA = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/time_day"),
+
+      CZ = ee.Image("users/fsn1995/Global_19862010_KG_5m");
+
+
+//********************************************************************************************//
+//****************************function main body******************************************//
+//**********************************************************************************************//
+
+exports.gpcc_pastmodels=function(){
+
+var year=require('users/zrjnwafu/functions:time').year;
+var month1=01;
+var month12=12;
+var startdate=ee.Date.fromYMD({year:year,month:month1,day:1});
+var enddate=ee.Date.fromYMD({year:year,month:month12,day:31});
+
+var getDaysInYear = function(m) {
+  var date = ee.Date.fromYMD(year,m,1); 
+  var nextYear = date.advance(1, 'year'); 
+  var days = nextYear.difference(date, 'day');
+  return days;}; 
+var days = getDaysInYear(1);
+var getMonthsInYear = function(year) {
+  var date = ee.Date.fromYMD(year, month1, 1); 
+  var nextYear = date.advance(1, 'year'); 
+  var months = nextYear.difference(date, 'month');  
+  return months; 
+};
+var months = getMonthsInYear(year);
+var date = ee.List.sequence(1,364);
+var month_12 = ee.List.sequence(1, 12);
+var month_360 = ee.List.sequence(1, 360,30);
+var halfmonth_list = ee.List.sequence(1, 360, 15);
+
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var CollectionFunc = require('users/zrjnwafu/functions:FromImages2Collection');
+var GPCC_monthCol = CollectionFunc.FromImages2Collection_func(GPCC_MO,time_MO).imgCol;
+var GPCC_MO_load = require('users/zrjnwafu/functions:GPCC_MO');
+var GPCC_MO_processed = GPCC_MO_load.GPCC_MO_func(GPCC_monthCol);
+//GPCC MONTHLY MFI
+var yearwise_pre_GPm = GPCC_MO_processed.yearwise_pre_GPm;
+var Py_GP = GPCC_MO_processed.Py_GP;
+var Rc_GP = GPCC_MO_processed.Rc_GP;
+var MFI_GP = GPCC_MO_processed.MFI_GP;
+var P6_9m_GP = GPCC_MO_processed.P6_9m_GP;
+var P5_10m_GP = GPCC_MO_processed.P5_10m_GP;
+var P4_10m_GP = GPCC_MO_processed.P4_10m_GP;
+var P10_5m_GP = GPCC_MO_processed.P10_5m_GP;
+var Pmmax_GP = GPCC_MO_processed.Pmmax_GP;
+var CV_GP = GPCC_MO_processed.CV_GP;
+var FF_GP = GPCC_MO_processed.FF_GP;
+var PCI_GP = GPCC_MO_processed.PCI_GP;
+var SI_GP = GPCC_MO_processed.SI_GP;
+var FI_GP = GPCC_MO_processed.FI_GP;
+var Pspring_GP = GPCC_MO_processed.Pspring_GP;
+var Psummer_GP = GPCC_MO_processed.Psummer_GP;
+var Pautumn_GP = GPCC_MO_processed.Pautumn_GP;
+var Pwinner_GP = GPCC_MO_processed.Pwinner_GP;
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var GPCC_dayCol = CollectionFunc.FromImages2Collection_func(GPCC_DA,time_DA).imgCol;
+var GPCC_DA_load = require('users/zrjnwafu/functions:GPCC_DA');
+var GPCC_DA_processed = GPCC_DA_load.GPCC_DA_func(GPCC_dayCol,GPCC_monthCol);
+//GPCC daily MFI
+var yearwise_pre_GPd = GPCC_DA_processed.yearwise_pre_GPd;
+var yearwise_pre_GPd4 = GPCC_DA_processed.yearwise_pre_GPd4;
+var yearwise_pre_GPd8 = GPCC_DA_processed.yearwise_pre_GPd8;
+var yearwise_pre_GPd10 = GPCC_DA_processed.yearwise_pre_GPd10;
+var yearwise_pre_GPd12 = GPCC_DA_processed.yearwise_pre_GPd12;
+var Days_GPm10 = GPCC_DA_processed.Days_GPm10;
+var P_GPm10 = GPCC_DA_processed.P_GPm10;
+var Days_GPm = GPCC_DA_processed.Days_GPm;
+var Days_GP = GPCC_DA_processed.Days_GP;
+var yearwise_pre_GPdm = GPCC_DA_processed.yearwise_pre_GPdm;
+var F24_GP = GPCC_DA_processed.F24_GP;
+var MFI_GPd = GPCC_DA_processed.MFI_GPd;
+var PCI_GPd = GPCC_DA_processed.PCI_GPd;
+
+var SDII_GP=yearwise_pre_GPd.map(function(img){
+  var results=img.updateMask(img.gt(1));
+  return results;
+}).mean();
+
+///////////////////////////////////////Functions\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var Ele = GMTED;
+var PET=MODIS_PET.select('PET').filterDate(startdate,enddate)
+.mean().multiply(0.1).divide(8).multiply(365);
+var Lon = ee.Image.pixelLonLat().select('longitude');
+
+var Lat = ee.Image.pixelLonLat().select('latitude');
+
+////////////////////////////////////KG Zones\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////*******************************************************************///////////
+///////////////////////////////////////Li model///////////////////////////////////////////
+var CZ1 = CZ.updateMask(CZ.lte(30));
+var list= ee.List.sequence(0,30);
+var new_list = [
+99,99,99,99,2,3,4,4,
+5,6,6,7,7,7,88,88,
+88,8,9,10,10,11,12,13,
+13,14,15,15,15,16,17];
+//print(new_list)
+var remap= CZ1.remap(list,new_list);
+//print(remap);
+var lat1 = ee.Image.pixelLonLat().select('latitude');
+var lat2 = lat1.abs();
+var lon1 = ee.Image.pixelLonLat().select('longitude');
+var lon2 = lon1.abs();
+
+////////////////////////////////////Rainfall Erosivity Function\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+/////////////////////////////////////////////////////////////////////////////////////////////////
+var Exp = ee.Number(Math.E);
+
+var RE = function(img1,img2,img3){
+    var Py = img1;
+    var SDII = img2;
+    var Z = img3;
+
+    var Pow_BSk = Py.log().multiply(0.887).add(SDII.log().multiply(1.892))
+              .add(Z.log().multiply(-0.429)).add(0.0793);
+    var R_BSk = ee.Image(Exp).pow(Pow_BSk).updateMask(remap.updateMask(remap.eq(3))).rename('RE');//calculate R;
+
+    var Pow_Bwk = Py.pow(0.957).multiply(0.809).add(SDII.pow(6.285).multiply(0.000189));
+    var R_Bwk = Pow_Bwk.updateMask(remap.updateMask(remap.eq(4))).rename('RE');//calculate R;
+
+    var Pow_Cfa = Py.log().multiply(0.462).add(SDII.log().multiply(1.97))
+              .add(Z.log().multiply(-0.106)).add(0.524);
+    var R_Cfa = ee.Image(Exp).pow(Pow_Cfa).updateMask(remap.updateMask(remap.eq(5))).rename('RE');//calculate R;
+
+    var Pow_Dfb = Py.log().multiply(0.266).add(SDII.log().multiply(3.1))
+                  .add(Z.log().multiply(-0.131)).add(-0.5);
+    var R_Dfb = ee.Image(Exp).pow(Pow_Dfb).updateMask(remap.updateMask(remap.eq(9))).rename('RE');//calculate R;
+
+    var R_Naipal = R_BSk.add(R_Bwk).add(R_Cfa).add(R_Dfb);
+    
+    var a1 = 0.004105;
+    var a2 = -1.219;
+    var a3 = 587.8;
+    var results_a = Py.pow(2).multiply(a1).add(Py.multiply(a2)).add(a3)
+    .updateMask(Py.gte(850)).set('year', year);
+    var b1 = 0.0483;
+    var b2 = 1.61;
+    var results_b = Py.pow(b2).multiply(b1)
+    .updateMask(Py.lt(850)).set('year', year);
+    var R_others = results_a.unmask(results_b);
+    
+    var R = R_Naipal.unmask(R_others);
+    
+    return R.set('year',year);
+  };
+  
+var Li_EQ23iswcr=RE(Py_GP,SDII_GP,GMTED)
+.rename('Li_EQ23iswcr').updateMask(CZ.lte(30)).set('year',year);
+
+
+/////////*******************************************************************///////////
+///////////////////////////////////////Liu model///////////////////////////////////////////
+/////////*******************************************************************///////////
+var list= ee.List.sequence(0,31,1);
+//print(list)
+var new_list = ee.List([1,1,1,1,2,2,3,3,6,6,6,4,4,4,5,5,5,7,7,7,7,99,99,99,99,8,8,8,8,99,99,99]);
+//print(new_list)
+var remap= CZ.remap(list,new_list);
+var lat1 = ee.Image.pixelLonLat().select('latitude');
+var lat2 = lat1.abs();
+var lon1 = ee.Image.pixelLonLat().select('longitude');
+var lon2 = lon1.abs();
+
+var b = remap.where(remap.eq(1),ee.Image(1.694).add(lat2.multiply(0.013)))
+.where(remap.eq(2),1.73).where(remap.eq(3),1.514).where(remap.eq(4),1.563)
+.where(remap.eq(5),1.558).where(remap.eq(6),1.5)
+.where(remap.eq(7),ee.Image(2.243).subtract(lat2.multiply(0.008)))
+.where(remap.eq(8),1.466).where(remap.eq(99),0).clamp(0,10);
+
+var a = remap.where(remap.eq(1),ee.Image(10).pow(ee.Image(2.363).subtract(b.multiply(1.561))))
+.where(remap.eq(2),0.3296)
+.where(remap.eq(3),ee.Image(2.123).subtract(lat2.multiply(0.04))
+.multiply(ee.Image(10).pow(b.multiply(-1.341).add(1.781))))
+.where(remap.eq(4),0.2735)
+.where(remap.eq(5),0.817)
+.where(remap.eq(6),ee.Image(10).pow(
+ee.Image(3.792).subtract(lon2.multiply(0.012)).subtract(lat2.multiply(0.037))
+.multiply(ee.Image(1.5).multiply(-2.079).add(3.016)))).clamp(0,2)//ee.Image(3.792).subtract(lon1.abs().multiply(0.012)).subtract(lat.multiply(0.037)).multiply(ee.Image(10).pow(ee.Image(1.5).multiply(-2.079).add(3.016))).clamp(0,1.65))
+.where(remap.eq(7),lon2.multiply(0.028).subtract(0.58)
+.multiply(ee.Image(10).pow(b.multiply(-5.236).add(9.458)))).clamp(0,2)//lon1.abs().multiply(0.028).subtract(0.58).multiply(ee.Image(10).pow(b.multiply(-5.236).add(9.458))).clamp(0,1.4))
+.where(remap.eq(8),1.24)
+.where(remap.eq(99),0).clamp(0,100);
+
+//////////////////////////////////////////////Function load\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var CollectionFunc = require('users/zrjnwafu/functions:FromImages2Collection');
+var GPCC_monthCol = CollectionFunc.FromImages2Collection_func(GPCC_MO,time_MO).imgCol;
+var GPCC_dayCol = CollectionFunc.FromImages2Collection_func(GPCC_DA,time_DA).imgCol;
+var GPCC_DA_load = require('users/zrjnwafu/functions:GPCC_DA');
+var GPCC_DA_processed = GPCC_DA_load.GPCC_DA_func(GPCC_dayCol,GPCC_monthCol);
+//GPCC daily MFI
+var yearwise_pre_GPd = GPCC_DA_processed.yearwise_pre_GPd;
+
+var startdate=ee.Date.fromYMD({year:year,month:1,day:1});
+var enddate=ee.Date.fromYMD({year:year,	month:12,	day:31});
+
+function ER(image) {
+  return a.multiply(image.pow(b)).copyProperties(image, image.propertyNames());
+}
+
+var GRE_LY = yearwise_pre_GPd.map(ER).sum()
+.rename('Liuyue_EQ20ca').updateMask(CZ.lte(30)).set('year',year).toUint16();
+
+
+/////////*******************************************************************///////////
+///////////////////////////////////////Naipal model///////////////////////////////////////////
+/////////*******************************************************************///////////
+var CZ2 = CZ.updateMask(CZ.lte(30));
+var list= ee.List.sequence(0,30);
+var new_list = [
+99,99,99,99,2,3,4,4,
+5,6,6,7,7,7,88,88,
+88,8,9,10,10,11,12,13,
+13,14,15,15,15,16,17];
+//print(new_list)
+var remap= CZ2.remap(list,new_list);
+//print(remap);
+var Exp = ee.Number(Math.E);
+
+var RE = function(img1,img2,img3){
+    var Py = img1;
+    var SDII = img2;
+    var Z = img3;
+    
+    var Pow_A = Py.pow(2).multiply(0.004105).add(Py.multiply(-1.219).add(587.8));
+    var R_A = Pow_A.updateMask(remap.updateMask(remap.eq(99))).rename('RE');//calculate R;
+    
+    var Pow_BSh = Py.log().multiply(1.595).add(SDII.log().multiply(2.068).add(-7.72));
+    var R_BSh = ee.Image(Exp).pow(Pow_BSh).updateMask(remap.updateMask(remap.eq(2))).rename('RE');//calculate R;
+
+    var Pow_BSk = Py.log().multiply(0.887).add(SDII.log().multiply(1.892))
+              .add(Z.log().multiply(-0.429)).add(0.0793);
+    var R_BSk = ee.Image(Exp).pow(Pow_BSk).updateMask(remap.updateMask(remap.eq(3))).rename('RE');//calculate R;
+    
+    var Pow_Bwh = Py.pow(0.957).multiply(0.809).add(SDII.pow(6.285).multiply(0.000189));
+    var R_Bwh = Pow_Bwh.updateMask(remap.updateMask(remap.eq(4))).rename('RE');//calculate R;
+
+    var Pow_Bwk = Py.pow(0.957).multiply(0.809).add(SDII.pow(6.285).multiply(0.000189));
+    var R_Bwk = Pow_Bwk.updateMask(remap.updateMask(remap.eq(4))).rename('RE');//calculate R;
+
+    var Pow_Cfa = Py.log().multiply(0.462).add(SDII.log().multiply(1.97))
+              .add(Z.log().multiply(-0.106)).add(0.524);
+    var R_Cfa = ee.Image(Exp).pow(Pow_Cfa).updateMask(remap.updateMask(remap.eq(5))).rename('RE');//calculate R;
+
+    var Pow_Cfb = Py.log().multiply(0.676).add(SDII.log().multiply(3.34)).add(-4.853);
+    var R_Cfb = ee.Image(Exp).pow(Pow_Cfb).updateMask(remap.updateMask(remap.eq(6))).rename('RE');//calculate R;
+
+    var Pow_Cfc = Py.log().multiply(0.676).add(SDII.log().multiply(3.34)).add(-4.853);
+    var R_Cfc = ee.Image(Exp).pow(Pow_Cfc).updateMask(remap.updateMask(remap.eq(6))).rename('RE');//calculate R;
+    
+    var Pow_Csa = Py.pow(1.987).multiply(0.000355).add(98.35);
+    var R_Csa = Pow_Csa.updateMask(remap.updateMask(remap.eq(7))).rename('RE');//calculate R;
+    
+    var Pow_Csb = Py.pow(1.987).multiply(0.000355).add(98.35);
+    var R_Csb = Pow_Csb.updateMask(remap.updateMask(remap.eq(7))).rename('RE');//calculate R;
+    
+    var Pow_Csc = Py.pow(1.987).multiply(0.000355).add(98.35);
+    var R_Csc = Pow_Csc.updateMask(remap.updateMask(remap.eq(7))).rename('RE');//calculate R;
+
+    var Pow_Dfa = Py.log().multiply(0.737).add(SDII.log().multiply(2.033)).add(-1.99);
+    var R_Dfa = ee.Image(Exp).pow(Pow_Dfa).updateMask(remap.updateMask(remap.eq(8))).rename('RE');//calculate R;
+
+    var Pow_Dfb = Py.log().multiply(0.266).add(SDII.log().multiply(3.1))
+                  .add(Z.log().multiply(-0.131)).add(-0.5);
+    var R_Dfb = ee.Image(Exp).pow(Pow_Dfb).updateMask(remap.updateMask(remap.eq(9))).rename('RE');//calculate R;
+
+    var Pow_Dfc = SDII.log().multiply(3.862).add(-1.259);
+    var R_Dfc = ee.Image(Exp).pow(Pow_Dfc).updateMask(remap.updateMask(remap.eq(10))).rename('RE');//calculate R;
+
+    var Pow_Dfd = SDII.log().multiply(3.862).add(-1.259);
+    var R_Dfd = ee.Image(Exp).pow(Pow_Dfd).updateMask(remap.updateMask(remap.eq(10))).rename('RE');//calculate R;
+
+    var Pow_Dsa = SDII.log().multiply(-0.963).add(Z.log().multiply(-0.247)).add(8.602);
+    var R_Dsa = ee.Image(Exp).pow(Pow_Dsa).updateMask(remap.updateMask(remap.eq(11))).rename('RE');//calculate R;
+
+    var Pow_Dsb = Py.log().multiply(0.494).add(2.166);
+    var R_Dsb = ee.Image(Exp).pow(Pow_Dsb).updateMask(remap.updateMask(remap.eq(12))).rename('RE');//calculate R;
+
+    var Pow_Dsc = SDII.log().multiply(-0.869).add(6.236);
+    var R_Dsc = ee.Image(Exp).pow(Pow_Dsc).updateMask(remap.updateMask(remap.eq(13))).rename('RE');//calculate R;
+
+    var Pow_Dsd = SDII.log().multiply(-0.869).add(6.236);
+    var R_Dsd = ee.Image(Exp).pow(Pow_Dsd).updateMask(remap.updateMask(remap.eq(13))).rename('RE');//calculate R;
+
+    var Pow_Dwa = Py.log().multiply(1.238).add(-0.572);
+    var R_Dwa = ee.Image(Exp).pow(Pow_Dwa).updateMask(remap.updateMask(remap.eq(14))).rename('RE');//calculate R;
+
+    var Pow_Dwb = Py.log().multiply(0.788).add(SDII.log().multiply(1.824)).add(-1.7);
+    var R_Dwb = ee.Image(Exp).pow(Pow_Dwb).updateMask(remap.updateMask(remap.eq(15))).rename('RE');//calculate R;
+
+    var Pow_Dwc = Py.log().multiply(0.788).add(SDII.log().multiply(1.824)).add(-1.7);
+    var R_Dwc = ee.Image(Exp).pow(Pow_Dwc).updateMask(remap.updateMask(remap.eq(15))).rename('RE');//calculate R;
+
+    var Pow_Dwd = Py.log().multiply(0.788).add(SDII.log().multiply(1.824)).add(-1.7);
+    var R_Dwd = ee.Image(Exp).pow(Pow_Dwd).updateMask(remap.updateMask(remap.eq(15))).rename('RE');//calculate R;
+
+    var Pow_EF = Py.log().multiply(-1.286).add(16.39);
+    var R_EF = ee.Image(Exp).pow(Pow_EF).updateMask(remap.updateMask(remap.eq(16))).rename('RE');//calculate R;
+
+    var Pow_ET = Py.log().multiply(1.54).add(-3.945);
+    var R_ET = ee.Image(Exp).pow(Pow_ET).updateMask(remap.updateMask(remap.eq(17))).rename('RE');//calculate R;
+
+    var Pow_Cwa = Py.pow(1.61).multiply(0.0483);
+    var R_Cwa =Pow_Cwa.updateMask(remap.updateMask(remap.eq(88))).rename('RE');//calculate R;
+
+    var Pow_Cwb = Py.pow(1.61).multiply(0.0483);
+    var R_Cwb = Pow_Cwa.updateMask(remap.updateMask(remap.eq(88))).rename('RE');//calculate R;
+
+    var Pow_Cwc = Py.pow(1.61).multiply(0.0483);
+    var R_Cwc = Pow_Cwa.updateMask(remap.updateMask(remap.eq(88))).rename('RE');//calculate R;
+    
+    var R = ee.ImageCollection.fromImages
+    ([R_BSh,R_BSk,R_Bwh,R_Bwk,
+      R_Csa,R_Csb,R_Csc,R_A,
+      R_Cfa,R_Cfb,R_Cfc,R_Dfa,
+      R_Dfb,R_Dfc,R_Dfd,R_Dsa,
+      R_Dsb,R_Dsc,R_Dsd,R_Dwa,
+      R_Dwb,R_Dwc,R_Dwd,R_EF,
+      R_ET,R_Cwa,R_Cwb,R_Cwc
+    ]).mosaic();
+    
+    return R.set('year',year);
+  };
+  
+var Naipal_EQ15gmd=RE(Py_GP,SDII_GP,GMTED).rename('Naipal_EQ15gmd')
+.updateMask(CZ.lte(30)).set('year',year).toUint16();
+
+
+/////////*******************************************************************///////////
+///////////////////////////////////////Renard model///////////////////////////////////////////
+/////////*******************************************************************///////////
+var EQ_34_1 = function(img){
+    var Py = img;
+    var a1 = 0.004105;
+    var a2 = -1.219;
+    var a3 = 587.8;
+    var results_a = Py.pow(2).multiply(a1).add(Py.multiply(a2)).add(a3)
+    .updateMask(Py.gte(850)).set('year', year);
+    var b1 = 0.0483;
+    var b2 = 1.61;
+    var results_b = Py.pow(b2).multiply(b1)
+    .updateMask(Py.lt(850)).set('year', year);
+    var results = results_a.unmask(results_b);
+    return  results;
+};
+var EQ_34_4 = function(img){
+    var Py = img;
+    var a1 = 0.4770;
+    var a2 = -6.081;
+    var a3 = 95.77;
+    var results_a = Py.pow(2).multiply(a1).add(Py.multiply(a2)).add(a3)
+    .updateMask(Py.gte(55)).set('year', year);
+    var b1 = 0.7397;
+    var b2 = 1.847;
+    var results_b = Py.pow(b2).multiply(b1)
+    .updateMask(Py.lt(55)).set('year', year);
+    var results = results_a.unmask(results_b);
+    return  results;
+};
+var Renard_py=EQ_34_1(Py_GP).rename('Renard_EQ34_gpcc');
+var Renard_mfi =EQ_34_4(MFI_GP).rename('Renard_EQ34_gpcc_m2');
+
+var GRE_pastmodels = ee.Image.cat([Li_EQ23iswcr, GRE_LY, Naipal_EQ15gmd, Renard_py, Renard_mfi]).set('year',year).toUint16();
+
+return {' GRE_pastmodels’: GRE_pastmodels };};
