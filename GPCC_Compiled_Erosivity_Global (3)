@@ -24,7 +24,11 @@ GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month")
     F_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/F_Iran"),
     G_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/G_Iran"),
     MexicoRex = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/MexicoRegions"),
-    KG_CZ = ee.Image("users/fsn1995/Global_19862010_KG_5m");
+    East_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/East_India"),
+    South_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/South_India"),
+    West_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/West_India"),
+    Central_India = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/Central_India"),
+KG_CZ = ee.Image("users/fsn1995/Global_19862010_KG_5m");
 
 
 //********************************************************************************************//
@@ -131,13 +135,13 @@ var ChileAraucania = GLB.filter(ee.Filter.eq('ADM0_NAME','Chile'))
 var Brazil = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'));
 
 //////////////////////////////////////EQ India KG CZ 71\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var India = GLB.filter(ee.Filter.eq('ADM0_NAME','India'));
 var India_Cold = KG_CZ.eq(15).clip(India.geometry());
 var India_Desert = KG_CZ.eq(6).clip(India.geometry());
 var India_Semiarid = KG_CZ.eq(4).clip(India.geometry());
 var India_Tem = KG_CZ.eq(14).or(KG_CZ.eq(11)).clip(India.geometry());
 var India_Trosava = KG_CZ.eq(3).or(KG_CZ.eq(2)).clip(India.geometry());
 var India_Tromon = KG_CZ.eq(1).clip(India.geometry());
-
 
 ///////////////////////////////////////Preparation\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var year=require('users/zrjnwafu/functions:time').year;
@@ -851,9 +855,38 @@ var EQ_60 = function(img1){
 var R_gpcc_m=EQ_60(MFI_GP).rename('ChileCoquimbo_EQ60_gpcc');
 var ChileCoquimbo_EQ60 = ee.Image.cat([R_gpcc_m]).clip(ChileCoquimbo);
 
+///////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////EQ India 40 (Model ID 72)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+///////////////////////////////////////////////////////////////////////////////////////////
+var EQ_40 = function(img1){
+  
+    var MFI = img1;
+    
+    var results_C = MFI.pow(0.984).multiply(3.371)
+    .multiply(1.678).set('year', year).clip(Central_India);
+
+    var results_E = MFI.pow(1.785).multiply(0.041)
+    .multiply(1.678).set('year', year).clip(East_India);
+
+    var results_W = MFI.pow(1.826).multiply(0.033)
+    .multiply(1.678).set('year', year).clip(West_India);
+
+    var results_S = MFI.pow(0.989).multiply(3.618)
+    .multiply(1.678).set('year', year).clip(South_India);
+    
+    var results = results_C.clip(India).unmask(results_E).unmask(results_W).unmask(results_S);
+    
+    return  results;
+};
+
+var R_gpcc_m=EQ_40(MFI_GP).rename('India_EQ40_gpcc');
+
+var India_EQ40 = ee.Image.cat([R_gpcc_m]).clip(India);
+
+
 
 var EQ_189_60 = ee.Image.cat([Korea_EQ196,
-EastAfrica_EQ228,Spain_EQ192, China_EQ_8_9,
+EastAfrica_EQ228,Spain_EQ192, China_EQ_8_9,India_EQ40
 Australia_EQ91,BrazilRGDN_EQ220, ChileAraucania_EQ32,
 BrazilAlagoas_EQ232,Brazil_EQ235,Portugal_EQ243,MexicoRe_EQ254,
 India_EQ71,AlbaniaItaly_EQ28,Czech_EQ19,Austria_EQ38,Germany_EQ19,
