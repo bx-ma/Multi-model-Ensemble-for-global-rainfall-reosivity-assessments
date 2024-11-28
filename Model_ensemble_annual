@@ -1,0 +1,48 @@
+// ****************************************************************************************************************** //
+// ****************************************Multi-model ensemble annual rainfall erosivity  ************************************** //
+// ****************************************************************************************************************** //
+
+
+var yearlist = ee.List.sequence(1982, 2020);
+var srcFolder = 'projects/ee-zrj-global-rainfallero/assets/';//change to your path
+var startyear = 1982;
+var endyear = 2020;
+
+var imgListx = ee.List([]);
+//var year = 1982;
+for(var year = startyear; year<=endyear;year++){
+  var imgcat = ee.Image(srcFolder+'GRE_EQ_111_248_'+year).set("year",year) .reproject({//change to your path
+    crs: 'EPSG:4326', 
+    scale: 11132 
+});
+  
+var numList0 = ee.List.sequence(0,189);//n
+var imgList0 = numList0.map(function(num){
+  return imgcat.select([num]).rename('RE');
+});
+var imgCol0 = ee.ImageCollection(imgList0);
+var Rainfallerosivity0 = imgCol0.mean().set('Year',year);
+
+var tmpImgi = ee.Image(srcFolder+'GRE_Otherstudies_'+year)//change to your path
+.set("Year",year).select('Naipal_EQ15gmd').reproject({
+    crs: 'EPSG:4326', 
+    scale: 11132 
+});
+var GRE_and_Naipal = Rainfallerosivity.unmask(tmpImgi.select('Naipal_EQ15gmd'))
+.set('Year',year).rename("RE_"+year);
+
+Export.image.toAsset({
+	image:GRE_and_Naipal,
+	description:'GRE_and_Naipal_'+year,
+//	assetId:,
+//	pyramidingPolicy:,
+//	dimensions:,
+//	region:,
+	scale:11132,
+	crs:'EPSG:4326',
+//	crsTransform:,
+	maxPixels:1e13,
+//	shardSize:,
+//	priority:,
+});//imgListx =  imgListx.add(GRE_and_Naipal);
+    }
