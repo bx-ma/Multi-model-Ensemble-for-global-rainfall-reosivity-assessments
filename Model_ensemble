@@ -1,0 +1,42 @@
+var  GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month"),
+    time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month");
+
+var CollectionFunc = require('users/zrjnwafu/functions:FromImages2Collection');
+var GPCC_monthCol = CollectionFunc.FromImages2Collection_func(GPCC_MO,time_MO).imgCol;
+var yearlist = ee.List.sequence(1982, 2020);
+
+var startyear = 1982;
+var endyear = 2020;
+
+var srcFolder = 'projects/ee-zrj-global-rainfallero/assets/';//replace the path to your GEE Asset path that you save the rainfall erosivity images.
+var imgLista = ee.List([]);
+for(var year = startyear; year<=endyear;year++){
+  var tmpImga = ee.Image(srcFolder+'GRE_EQ_111_248_'+year+'_GPCC_20240415').set("year",year);//srcFolder+'GRE_EQ_111_248_'+year+'_GPCC_20240415' should be replaced as the image path
+  imgLista =  imgLista.add(tmpImga);
+}
+var imgLista = ee.ImageCollection.fromImages(imgLista);//imagecollection is created loading rainfall erosivity from 1982 to 2020.
+
+var imgcat = imgLista.mean();//Produce rainfall erosivity multi-year average, including the image from each model.
+print(imgcat.bandNames(),'imgcat bandNames');//check the bandsname and number.
+
+var numList0 = ee.List.sequence(0,n);//change the n to band number -1
+var imgList0 = numList0.map(function(num){
+  return maskedImage.select([num]);
+});
+var imgCol0 = ee.ImageCollection(imgList0);
+var Rainfallerosivity0 = imgCol0.mean();//Collections of rainfall erosivity from each model are compiled to a image with the average (1982-2020) of global rainfall erosivity.
+
+var imgListi = ee.List([]);
+for(var year = startyear; year<=endyear;year++){
+  var tmpImgi = ee.Image(srcFolder+'Naipl_'+year).set("year",year);//srcFolder+'Naipl_'+year should be replaced as the image path (the results of the Naipal's model)
+  imgListi =  imgListi.add(tmpImgi);
+}
+var imgListi = ee.ImageCollection.fromImages(imgListi);//load annual rainfall erosivity images of the Naipal's model.
+var Rainfallerosivity1 = imgCol0.mean();//Collections of rainfall erosivity from the Naipal's model are compiled to a image with the average (1982-2020) of global rainfall erosivity.
+
+var Glo_RE = Rainfallerosivity0.unmask(Rainfallerosivity1);//Use the rainfall erosivity images of the Naipal's model as supplement of the multi-model ensemble (empirical models).
+
+Map.addLayer(Glo_RE,{min:0,max:8000,
+  palette:
+['ff5512','ebae21','f1ff27','adffca','8ddaff','41a6ff','1c56ff','0717e5']
+},'Global rainfall erosivity from the multi-model ensemble');
