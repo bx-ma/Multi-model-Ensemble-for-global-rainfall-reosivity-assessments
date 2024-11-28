@@ -156,7 +156,7 @@ var PET=MODIS_PET.select('PET').filterDate(startdate,enddate)
 .mean().multiply(0.1).divide(8).multiply(365);
 var Lon = ee.Image.pixelLonLat().select('longitude');
 var Lat = ee.Image.pixelLonLat().select('latitude');
-//////////////////////////////////////EQ Spain 21&53 (Model ID 54)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Spain 21&53 (Model ID 55)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ21_m = function(img1,img2,img3,img4){
     var PMEX = img1.pow(1.297).multiply(-11.92);
     var MR = img2.pow(-0.511).multiply(10538.88);
@@ -188,7 +188,7 @@ var R_era5_m2=EQ53_m2(Pmmax_GP,P10_5m_GP,P6_9m_GP,F24_GP).rename('Spain_EQ53_gpc
 var R_era5_m3=EQ53_m3(Pmmax_GP,P10_5m_GP,P6_9m_GP,F24_GP).rename('Spain_EQ53_gpcc_m3');
 var SpainMurica_EQ21 = ee.Image.cat([R_era5_m]).clip(SpainMurica);
 var Spain_EQ53 = ee.Image.cat([R_era5_m2,R_era5_m3]).clip(Spain);
-//////////////////////////////////////EQ Taiwan 23-25 (Model ID 48)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Taiwan 23-25 (Model ID 49)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_23 = function(imgc){
     var Pd12 = imgc;
     var beta = 1.66;
@@ -219,7 +219,7 @@ var R_era5_m2=EQ_24(yearwise_pre_GPd12).rename('Taiwan_EQ24_gpcc_m2');
 var R_era5_m3=EQ_25(yearwise_pre_GPd12).rename('Taiwan_EQ25_gpcc_m3');
 var Taiwan_EQ23 = ee.Image.cat([R_era5_m,R_era5_m2,R_era5_m3]).clip(Taiwan);
 //Map.addLayer(Taiwan_EQ23);
-//////////////////////////////////////EQ ChinaBeijing 42 (Model ID 67)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ ChinaBeijing 42 (Model ID 68)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ42_1 = function(imgc){
   var func_PD = function(date){
     var Pd12 = imgc.filter(ee.Filter.eq('date',date)).sum();
@@ -255,7 +255,7 @@ var R_era5_m2=EQ42_2(yearwise_pre_GPd12).sum().rename('ChinaBeijing_EQ42_gpcc_m2
 var R_era5_m3=EQ42_3(yearwise_pre_GPd12).rename('ChinaBeijing_EQ42_gpcc_m3');
 var ChinaBeijing_EQ42 = ee.Image.cat([R_era5_m,R_era5_m2,R_era5_m3]).clip(ChinaBeijing);
 
-//////////////////////////////////////EQ Iran 57 (Model ID 37)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Iran 57 (Model ID 38)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ57_1 = function(imgc){
   var func_PD = function(date){
     var Pd12 = imgc.filter(ee.Filter.eq('date',date)).sum();
@@ -295,7 +295,7 @@ var EQ159 = function(img){
   };
 var R_era5_m=EQ159(Py_GP).rename('Westafrica_EQ159_gpcc');
 var Westafrica_EQ159=ee.Image.cat([R_era5_m]).clip(Westafrica);
-//////////////////////////////////////EQ79 EU (Model ID 62)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ79 EU (Model ID 63)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var coeff_year = function(img1,img2,imgc){
 
 var MFI = img1;
@@ -390,7 +390,7 @@ var R_gpcc_m3=EQ234_3(yearwise_pre_GPm,Days_GPm,yearwise_pre_GPdm)
 var Indonesia_EQ234 = ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m3]).clip(Indonesia);
 //Map.addLayer(Days_GPm.max(),{min:1,max:30},'xxx');
 
-//////////////////////////////////////EQ New_Zealand 171 (Model ID 45)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ New_Zealand 171 (Model ID 46)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_171 = function(img1){
     var Py = img1;
     var results_a = Py.pow(1.13).multiply(0.773)
@@ -432,7 +432,7 @@ var R_gpcc_m=EQ_291_1(MFI_GP).rename('Morocco_EQ291_gpcc');
 var R_gpcc_m2=EQ_291_2(MFI_GP).rename('Morocco_EQ291_gpcc_m2');
 var Morocco_EQ291 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(Morocco);
 
-//////////////////////////////////////EQ Greece 286 (Model ID 51)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Greece 286 (Model ID 52)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var alphalist=ee.List([1.8,1.65,1.65,1.5,2.2,2.1,3.2,3.1,3.5,3.3,2.96,2.45]);
 var betalist=ee.List([-39.1,-37.5,-34.4,-22.5,259,-6.6,243,242,228,275,-78.9,-79]);
 var Elelist =ee.List([0,0,0,0,-0.026,0,0,0, -0.015,-0.08, -0.04,0]);
@@ -456,7 +456,7 @@ var R_gpcc_m=EQ_286(MFI_GP).rename('Greece_EQ286_gpcc');
 var Greece_EQ286 = ee.Image.cat([R_gpcc_m]).clip(Greece);
 
 
-//////////////////////////////////////EQ SpainMadrid 22 (Model ID 47)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ SpainMadrid 22 (Model ID 48)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ22_1 = function(img1){
     var MFI = img1;
     var results = MFI.multiply(10.5).set('year', year);
@@ -478,7 +478,7 @@ var R_gpcc_m2=EQ22_2(FI_GP).rename('SpainMadrid_EQ22_gpcc_m2');
 var R_gpcc_m3=EQ22_3(Py_GP).rename('SpainMadrid_EQ22_gpcc_m3');
 var SpainMadrid_EQ22 = ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m3]).clip(SpainMadrid);
 
-//////////////////////////////////////EQ Spain 192 (Model ID 25)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Spain 192 (Model ID 26)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_192_3 = function(img1){
     var MFI = img1;
     var a1 = 0.927;
@@ -498,7 +498,7 @@ var EQ_192_3 = function(img1){
 //var R_gpcc_m=EQ_192_2(FF_GP).rename('Spain_EQ192_gpcc_m2');
 var R_gpcc_m2=EQ_192_3(MFI_GP).rename('Spain_EQ192_gpcc_m3');
 var Spain_EQ192 = ee.Image.cat([R_gpcc_m2]).clip(Spain);
-//////////////////////////////////////EQ SouthSpain 125 (Model ID 58)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ SouthSpain 125 (Model ID 59)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_125 = function(img1,img2){
     var MFI = img1;
     var PCI = img2;
@@ -509,7 +509,7 @@ var EQ_125 = function(img1,img2){
 };
 var R_gpcc_m=EQ_125(MFI_GPd,PCI_GPd).rename('SouthSpain_EQ125_gpcc');
 var SouthSpain_EQ125 = ee.Image.cat([R_gpcc_m]).clip(SouthSpain);
-//////////////////////////////////////EQ Spain 251 (Model ID 46)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Spain 251 (Model ID 47)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_251 = function(img1,img2){
     var MFI = img1;
     var PCI = img2;
@@ -521,7 +521,7 @@ var EQ_251 = function(img1,img2){
 var R_gpcc_m=EQ_251(MFI_GPd,PCI_GPd).rename('Spain_EQ251_gpcc');
 var Spain_EQ251 = ee.Image.cat([R_gpcc_m]).clip(Spain);
 
-//////////////////////////////////////EQ Algeria 182 (Model ID 49)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Algeria 182 (Model ID 50)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_182_1 = function(img){
     var MFI = img.multiply(4.46);
     var results = MFI
