@@ -65,8 +65,11 @@ exports.gpcc34_117=function(){
 var country_co= LSIB.select("wld_rgn");
 var SouthAmerica = country_co.filter(ee.Filter.eq('wld_rgn','South America'));
 
-//////////////////////////////////////EQ Italy 74\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Italy 74 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var Italy = GLB.filter(ee.Filter.eq('ADM0_NAME','Italy'));
+
+//////////////////////////////////////EQ ItalyAbruzzi 112 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var ItalyAbruzzi_EQ112 = GLB.filter(ee.Filter.eq('ADM1_CODE',1616));
 
 //////////////////////////////////////EQ Brazil 100\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var Brazil = GLB.filter(ee.Filter.eq('ADM0_NAME','Brazil'));
@@ -303,7 +306,7 @@ var R_gpcc_m2=EQ_34_4(MFI_GP).rename('America_EQ34_gpcc_m2');
 var America_EQ34 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(America);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////EQ Italy 112 (Model ID 31)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ ItalyAbruzzi 112 (Model ID 31)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///////////////////////////////////////////////////////////////////////////////////////////
 var EQ_112_1 = function(img1,img2){
     var MFI = img1;
@@ -901,7 +904,7 @@ var R_gpcc_m = EQ253(yearly98p).rename('Mediterranean_EQ253_gpcc');
 var Mediterranean_EQ253 = ee.Image.cat([R_gpcc_m]).clip(Mediterranean);
 
 var EQ_34_117 = ee.Image.cat([America_EQ34,
-Italy_EQ112,
+ItalyAbruzzi_EQ112,
 Ethiopia_EQ211,
 AustraliaNSW_EQ258,
 ItalyMilan_EQ80,
