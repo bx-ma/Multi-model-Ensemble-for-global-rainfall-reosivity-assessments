@@ -1,3 +1,8 @@
+// ****************************************************************************************************************** //
+// **************************************** Multi-model ensemble process ************************************** //
+// ****************************************************************************************************************** //
+// ************************************Multi-year mean rainfall erosivity production**************************************** //
+
 var  GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month"),
     time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month");
 
