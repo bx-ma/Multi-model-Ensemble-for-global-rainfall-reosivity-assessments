@@ -15,6 +15,7 @@ GPCC_MO = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_month")
     time_MO = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/gpcc_time_month"),
     GPCC_DA = ee.Image("projects/ee-zrj-global-rainfallero/assets/gpcc_bands_day"),
     time_DA = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/time_day"),
+    A_Iran = ee.FeatureCollection("projects/ee-gmp-rainfallerosivity/assets/A_Iran"),
     EURes79 = ee.FeatureCollection("projects/ee-zrj-global-rainfallero/assets/EURes79");
 
 //********************************************************************************************//
@@ -285,7 +286,7 @@ var EQ57_3 = function(img){
 var R_era5_m=EQ57_1(yearwise_pre_GPd).sum().rename('Ian_EQ57_gpcc');
 var R_era5_m2=EQ57_2(yearwise_pre_GPm).sum().rename('Ian_EQ57_gpcc_m2');
 var R_era5_m3=EQ57_3(MFI_GP).rename('Ian_EQ57_gpcc_m3');
-var Iran_EQ57 = ee.Image.cat([R_era5_m,R_era5_m2,R_era5_m3]).clip(Iran);
+var Iran_EQ57 = ee.Image.cat([R_era5_m,R_era5_m2,R_era5_m3]).clip(A_Iran);
 //////////////////////////////////////EQ159 Westafrica (Model ID 1)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ159 = function(img){
     var Py = img;
