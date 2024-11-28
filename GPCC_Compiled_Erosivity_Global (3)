@@ -217,7 +217,7 @@ var PET=MODIS_PET.select('PET').filterDate(startdate,enddate)
 var Lon = ee.Image.pixelLonLat().select('longitude');
 var Lat = ee.Image.pixelLonLat().select('latitude');
 
-//////////////////////////////////////EQ Korea 196 (Model ID53)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Korea 196 (Model ID 54)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 /*var EQ_196_1 = function(img1){
     var Py = img1;
     var results = Py.multiply(5.03).subtract(2020).set('year', year);
@@ -269,7 +269,7 @@ var R_gpcc_m5=EQ_196_5(Py_GP).rename('Korea_EQ196_gpcc_m5');
 
 var Korea_EQ196 = ee.Image.cat([R_gpcc_m2,R_gpcc_m3,R_gpcc_m5]).clip(Korea);
 
-//////////////////////////////////////EQ EastAfrica 228 (Model ID5)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ EastAfrica 228 (Model ID 5)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_228 = function(img1){
     var Py = img1;
     
@@ -296,7 +296,7 @@ var EQ_228 = function(img1){
 var R_gpcc_m=EQ_228(Py_GP).rename('EastAfrica_EQ228_gpcc');
 var EastAfrica_EQ228 = ee.Image.cat([R_gpcc_m]).clamp(0,100000).clip(EastAF);
 
-/////////////////////////////////////EQ Spain 192 (Model ID 25)\\\\\\\\\\\\\\\\\\\\\\\\\\\\//////////////
+/////////////////////////////////////EQ Spain 192 (Model ID 26)\\\\\\\\\\\\\\\\\\\\\\\\\\\\//////////////
 var alphalist=ee.List([0.08,0.09,0.10,0.10,0.11,0.13,0.14,0.15,0.12,0.10,0.08,0.07]);
 var betalist=ee.List([1.60,1.65,1.70,1.72,1.80,1.90,2.00,2.00,1.90,1.75,1.70,1.65]);
 var EQ_192 = function(imgc1){
@@ -317,7 +317,7 @@ return  ee.ImageCollection(month_360.map(func_month));
 var R_gpcc_m=EQ_192(yearwise_pre_GPd12).sum().rename('Spain_EQ192_gpcc');
 var Spain_EQ192 =ee.Image.cat([R_gpcc_m]).clip(Spain);
 
-//////////////////////////////////////EQ China 8&9 (Model ID 50)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ China 8&9 (Model ID 51)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 function ER_8_9(image) {
   return image.pow(1.7265).copyProperties(image, image.propertyNames());
 }
@@ -329,7 +329,7 @@ return R_d1.add(R_d2).add(R_d3).rename('R');
 var R_gpcc_m=function_eq8_9(yearwise_pre_GPd10).rename(' China _EQ_8_9_gpcc');
 var China _EQ_8_9 =ee.Image.cat([R_gpcc_m]).clip(China);
 
-//////////////////////////////////////EQ Australia 91 (Model ID 44)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Australia 91 (Model ID 45)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_91 = function(imgc){
   var func_month2 = function(date){
     var Pd12 = imgc.filter(ee.Filter.gte('date',date))
@@ -350,7 +350,7 @@ return  ee.ImageCollection(month_360.map(func_month2));
 var R_gpcc_m=EQ_91(yearwise_pre_GPd12).sum().rename('Australia_EQ91_gpcc');
 var Australia_EQ91 =ee.Image.cat([R_gpcc_m]).clip(Australia);
 
-//////////////////////////////////////EQ BrazilRGDN 220 (Model ID 61)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ BrazilRGDN 220 (Model ID 62)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_220_1 = function(imgc){
   var Rc = imgc;
   var R = Rc.map(function(i){
@@ -382,7 +382,7 @@ var R_gpcc_m3=EQ_220_3(Rc_GP).rename('BrazilRGDN_EQ220_gpcc_m3');
 
 var BrazilRGDN_EQ220 = ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m3]).clip(BrazilRGDN);
 
-//////////////////////////////////////EQ BrazilAlagoas 232 (Model ID 66)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ BrazilAlagoas 232 (Model ID 67)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_232 = function(imgc){
   var Rc = imgc;
   var R = Rc.map(function(i){
@@ -394,7 +394,7 @@ var EQ_232 = function(imgc){
 var R_gpcc_m=EQ_232(Rc_GP).rename('BrazilAlagoas_EQ232_gpcc');
 var BrazilAlagoas_EQ232 = ee.Image.cat([R_gpcc_m]).clip(BrazilAlagoas);
 
-//////////////////////////////////////EQ Brazil 235 (Model ID 39)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Brazil 235 (Model ID 40)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///////////////////////////////////////////////////////////////////////////////////////////
 var EQ_235 = function(img1){
     var Py = img1;
@@ -414,7 +414,7 @@ var EQ_243 = function(img1){
 var R_gpcc_m=EQ_243(Py_GP).rename('Portugal_EQ243_gpcc');
 var Portugal_EQ243 = ee.Image.cat([R_gpcc_m]).clip(Portugal);
 
-//////////////////////////////////////EQ MexicoRe14 254 (Model ID 33)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ MexicoRe14 254 (Model ID 34)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_254 = function(img1){
     var Py = img1;
     var a1 = 0.002276;
@@ -497,7 +497,7 @@ var R_gpcc_m=EQ_254(Py_GP).rename('MexicoRe_EQ254_gpcc');
 var MexicoRe_EQ254 = ee.Image.cat([R_gpcc_m]).clip(Mexico);
 
 
-//////////////////////////////////////EQ ChileAraucania 32 (Model ID 28)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ ChileAraucania 32 (Model ID 29)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_32_1 = function(img1){
     var Py = img1;
     var results = Py.pow(1.617).multiply(0.015).set('year', year);
@@ -514,7 +514,7 @@ var R_gpcc_m2=EQ_32_2(Py_GP).rename('ChileAraucania_EQ32_gpcc_m2');
 
 var ChileAraucania_EQ32 = ee.Image.cat([R_gpcc_m,R_gpcc_m2]).clip(ChileAraucania);
 
-//////////////////////////////////////EQ India 71 (Model ID 76)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ India 71 (Model ID 77)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_71_1 = function(imgc1){
   var b1 = ee.Number(1.814);//India_Tromon
   var b2 = ee.Number(1.9);//India_Desert
@@ -572,7 +572,7 @@ return  ee.ImageCollection(month_12.map(func_PM)).sum();
 var R_gpcc_m3=EQ_28(yearwise_pre_GPm).rename('AlbaniaItaly_EQ28_gpcc_m3');
 var AlbaniaItaly_EQ28 = ee.Image.cat([R_gpcc_m3]).clip(AlbaniaItaly);
 
-//////////////////////////////////////EQ Czech 19 (Model ID 55)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Czech 19 (Model ID 56)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_19_1 = function(img1){
     var Py = img1;
     var R_y = Py.multiply(0.833).add(17.3);//calculate R per halfmonth;
@@ -639,7 +639,7 @@ var R_gpcc_m2=EQ_19_2(P5_10m_GP).rename('Austria_EQ38_gpcc_m2');
 var R_gpcc_m3=EQ_38_1(P4_10m_GP).rename('Austria_EQ38_gpcc_m3');
 var Austria_EQ38 = ee.Image.cat([R_gpcc_m,R_gpcc_m2,R_gpcc_m3]).clip(Austria);
 
-//////////////////////////////////////EQ Jordan 61 (Model ID 26)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Jordan 61 (Model ID 27)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_61_1 = function(img1){
     var Py = img1;
     var beta1 = 29.12;//23.61 optional
@@ -668,7 +668,7 @@ var R_gpcc_m5=EQ_61_5(Py_GP).rename('Jordan_EQ61_gpcc_m5');
 
 var Jordan_EQ61 = ee.Image.cat([R_gpcc_m, R_gpcc_m3, R_gpcc_m5]).clip(Jordan);
 
-//////////////////////////////////////EQ Iran 78 (Model ID 68)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ Iran 78 (Model ID 69)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 var EQ_78 = function(img1,img2){
     var MFI = img1;
     var Py = img2;
@@ -844,7 +844,7 @@ R_gpcc_m11,R_gpcc_m12]).clip(ColombiaCauca);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////EQ ChileCoquimbo 60 (Model ID 29)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ ChileCoquimbo 60 (Model ID 30)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///////////////////////////////////////////////////////////////////////////////////////////
 var EQ_60 = function(img1){
     var MFI = img1;
@@ -856,7 +856,7 @@ var R_gpcc_m=EQ_60(MFI_GP).rename('ChileCoquimbo_EQ60_gpcc');
 var ChileCoquimbo_EQ60 = ee.Image.cat([R_gpcc_m]).clip(ChileCoquimbo);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////EQ India 40 (Model ID 72)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+//////////////////////////////////////EQ India 40 (Model ID 73)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 ///////////////////////////////////////////////////////////////////////////////////////////
 var EQ_40 = function(img1){
   
