@@ -12,7 +12,7 @@ The functions of producing climatic parameters are GPCC_MO and GPCC_DA. The clim
 2.
 The functions of producing rainfall erosivity layer stacks are separately as several files: GPCC_Compiled_Erosivity_Global (1); GPCC_Compiled_Erosivity_Global (2); GPCC_Compiled_Erosivity_Global (3); GPCC_Compiled_Erosivity_Global (4); GPCC_Compiled_Erosivity_Global (5); GPCC_Compiled_Erosivity_Global (6).
 GPCC_Compiled_Erosivity_Global (1-5) contain the calculation functions and applicable region boundaries of each model. GPCC_Compiled_Erosivity_Global (6) contains the calculation functions and applicable region boundaries of five past-used models in global rainfall erosivity assessments (Renard and Freimund, 1994; Naipal et al., 2015; Liu et al., 2020; Li et al., 2023).
-These function have been uused in the main function and the functions of the model ensemble.
+These function have been uused in the main codes of running the functions of producing rainfall erosivity layer stacks and the codes of the model ensemble.
 
 3.
 The main codes of running the functions of producing rainfall erosivity layer stacks are: Rainfall_erosivity_function_Export.
@@ -22,6 +22,8 @@ This function could be run to produce rainfall erosivity images to GEE ASSET or 
 The codes of the model ensemble are: Model_ensemble
 This function call the rainfall erosivity images in GEE ASSET and produce an ImageCollection, then an average is of the ImageCollection reduced to map global rainfall erosivity.
 
+5.
+Note: the functions and codes should be saved as GEE scripts brfore running.
 
 Refenrences: 
 Li, J., He, H., Zeng, Q., Chen, L., Sun, R., 2023. A Chinese soil conservation dataset preventing soil water erosion from 1992 to 2019. Sci Data. 10, 319. 10.1038/s41597-023-02246-4.
