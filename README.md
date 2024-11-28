@@ -21,10 +21,11 @@ The main codes of running the functions of producing rainfall erosivity layer st
 This function could be run to produce rainfall erosivity images to GEE ASSET or CloudStorage.
 
 5.
-The codes of the model ensemble are: Model_ensemble
-This function call the rainfall erosivity images in GEE ASSET and produce an ImageCollection, then an average is of the ImageCollection reduced to map global rainfall erosivity.
+The codes of the model ensemble are: Model_ensemble and Model_ensemble_annual
+Model_ensemble: this function call the rainfall erosivity images in GEE ASSET and produce an ImageCollection, then an average of the ImageCollection is reduced to map global rainfall erosivity.
+Model_ensemble_annual: this function call the rainfall erosivity images in GEE ASSET and use an for loop to reduce the ImageCollection of annual global rainfall erosivity.
 
-6.
+7.
 Note: the functions and codes should be saved as GEE scripts brfore running.
 
 Refenrences: 
